@@ -4,8 +4,7 @@ import lombok.Getter;
 
 @Getter
 public enum UnidadeMedida {
-    QUANTIDADE("quantidade"),
-    CENTIMETRO("centimetro"),
+    UNIDADE("unidade"),
     METRO("metro"),
     GRAMA("grama");
 
