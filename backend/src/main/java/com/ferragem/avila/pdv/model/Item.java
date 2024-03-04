@@ -2,6 +2,8 @@ package com.ferragem.avila.pdv.model;
 
 import java.math.BigDecimal;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
@@ -21,7 +23,7 @@ public class Item {
     private Long id;
 
     @Column(nullable = false)
-    private Integer quantidade;
+    private Float quantidade;
 
     @Column
     private BigDecimal preco;
@@ -32,6 +34,6 @@ public class Item {
 
     @ManyToOne
     @JoinColumn(name = "venda_id")
+    @JsonIgnore
     private Venda venda;
-    
 }

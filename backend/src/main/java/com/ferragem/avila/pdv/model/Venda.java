@@ -3,7 +3,6 @@ package com.ferragem.avila.pdv.model;
 import java.time.LocalDateTime;
 import java.util.List;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.ferragem.avila.pdv.model.enums.FormaPagamento;
 
 import jakarta.persistence.Column;
@@ -15,8 +14,10 @@ import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
 import jakarta.validation.constraints.FutureOrPresent;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 @Data
+@NoArgsConstructor
 @Entity
 @Table(name = "venda")
 public class Venda {
@@ -27,7 +28,11 @@ public class Venda {
 
     @Column(nullable = false)
     @FutureOrPresent
-    private LocalDateTime dataHora;
+    private LocalDateTime dataHoraInicio;
+
+    @Column(nullable = false)
+    @FutureOrPresent
+    private LocalDateTime dataHoraConclusao;
     
     @Column(nullable = false)
     private boolean concluida;
@@ -35,8 +40,7 @@ public class Venda {
     @Column(nullable = false)
     private FormaPagamento formaPagamento;
     
-    @OneToMany(mappedBy = "produto")
-    @JsonIgnore
+    @OneToMany(mappedBy = "venda")
     private List<Item> itens;
-    
+
 }
