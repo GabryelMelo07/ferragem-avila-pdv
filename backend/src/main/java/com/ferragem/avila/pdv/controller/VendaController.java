@@ -47,7 +47,7 @@ public class VendaController {
         return ResponseEntity.ok().body(vendaService.addItemToVenda(item));
     }
     
-    @PostMapping("/salvar")
+    @PostMapping("/concluir")
     public ResponseEntity<Venda> persistVenda(@RequestBody VendaDTO dto) {
         return ResponseEntity.ok().body(vendaService.persistVenda(dto));
     }
