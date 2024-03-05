@@ -2,7 +2,7 @@ package com.ferragem.avila.pdv.model;
 
 import java.math.BigDecimal;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -34,6 +34,6 @@ public class Item {
 
     @ManyToOne
     @JoinColumn(name = "venda_id")
-    @JsonIgnore
+    @JsonIgnoreProperties("itens")
     private Venda venda;
 }
