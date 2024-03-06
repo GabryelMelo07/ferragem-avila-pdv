@@ -1,12 +1,15 @@
 package com.ferragem.avila.pdv.model;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 
 import com.ferragem.avila.pdv.model.enums.FormaPagamento;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
@@ -38,9 +41,17 @@ public class Venda {
     private boolean concluida;
 
     @Column(nullable = false)
+    @Enumerated(EnumType.STRING)
     private FormaPagamento formaPagamento;
     
     @OneToMany(mappedBy = "venda")
     private List<Item> itens;
+
+    public Venda(Long id) {
+        this.id = (id != null) ? id + 1 : 1;
+        this.dataHoraInicio = LocalDateTime.now();
+        this.concluida = false;
+        this.itens = new ArrayList<Item>();
+    }
 
 }
