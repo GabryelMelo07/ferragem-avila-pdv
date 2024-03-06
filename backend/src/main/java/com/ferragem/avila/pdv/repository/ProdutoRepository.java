@@ -9,5 +9,6 @@ import com.ferragem.avila.pdv.model.Produto;
 public interface ProdutoRepository extends JpaRepository<Produto, Long> {
     List<Produto> findByAtivoTrue();
     List<Produto> findByAtivoFalse();
-    List<Produto> findByDescricaoContainingIgnoreCase(String nome);
+    List<Produto> findByDescricaoContainingIgnoreCaseAndAtivoTrue(String nome);
+    Produto findByCodigoBarrasEAN13(String codigoBarras);
 }
