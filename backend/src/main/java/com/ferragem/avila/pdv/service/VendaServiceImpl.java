@@ -1,8 +1,7 @@
 package com.ferragem.avila.pdv.service;
 
-import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
 import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -13,7 +12,6 @@ import com.ferragem.avila.pdv.dto.VendaDTO;
 import com.ferragem.avila.pdv.model.Item;
 import com.ferragem.avila.pdv.model.Produto;
 import com.ferragem.avila.pdv.model.Venda;
-import com.ferragem.avila.pdv.model.enums.UnidadeMedida;
 import com.ferragem.avila.pdv.repository.VendaRepository;
 import com.ferragem.avila.pdv.service.interfaces.ItemService;
 import com.ferragem.avila.pdv.service.interfaces.ProdutoService;
@@ -39,7 +37,7 @@ public class VendaServiceImpl implements VendaService {
     
     @Override
     public List<Venda> getAll() {
-        return vendaRepository.findByConcluidaTrue();
+        return vendaRepository.findAll();
     }
 
     @Override
@@ -47,26 +45,23 @@ public class VendaServiceImpl implements VendaService {
         return vendaRepository.findById(id).orElseThrow(() -> new EntityNotFoundException("Venda não existe."));
     }
 
-    private Venda save(Venda venda) {
-        return vendaRepository.save(venda);
+    @Override
+    public List<Venda> getBetweenDataConclusao(LocalDate dataInicio, LocalDate dataFim) {
+        return vendaRepository.findByDataHoraConclusaoBetween(dataInicio, dataFim);
     }
     
     @Override
-    public Venda saveInRedis() {          
+    public Venda save() {          
         if (cacheService.existsByKey("venda_ativa"))
             throw new RuntimeException("Já existe uma venda ativa.");
             
-        Venda v = new Venda();
-        Long idUltimaVenda = vendaRepository.findLastId();
-        v.setId(idUltimaVenda != null ? idUltimaVenda + 1 : 1);
-        v.setDataHoraInicio(LocalDateTime.now());
-
+        Venda v = new Venda(vendaRepository.findLastId());
         cacheService.save("venda_ativa", v);
         return v;
     }
 
     @Override
-    public void deleteFromRedis() {
+    public void delete() {
         cacheService.delete("venda_ativa");
     }
 
@@ -79,67 +74,97 @@ public class VendaServiceImpl implements VendaService {
     }
 
     @Override
-    public Venda addItemToVenda(ItemDTO itemDto) {
+    public Venda addItem(ItemDTO itemDto) {
         Venda venda = getVendaFromRedis();
         Produto produto = produtoService.getById(itemDto.produtoId());
-        Float estoqueAntigo = produto.getEstoque();
-        Float novoEstoque = produto.getEstoque() - itemDto.quantidade();
+        List<Item> itens = venda.getItens();
 
-        if (novoEstoque < 0)
-            throw new IllegalStateException("O produto não tem estoque suficiente.");
-
-        if (venda.getItens() == null)
-            venda.setItens(new ArrayList<Item>());
-
-        Item item = new Item();
-        item.setQuantidade(itemDto.quantidade());
-
-        if (produto.getUnidadeMedida() == UnidadeMedida.GRAMA) {
-            BigDecimal precoPorKg = produto.getPreco().divide(new BigDecimal(1000));
-            item.setPreco(precoPorKg.multiply(new BigDecimal(itemDto.quantidade().floatValue())));
-        } else if (produto.getUnidadeMedida() == UnidadeMedida.METRO) {
-            BigDecimal precoPorMetro = produto.getPreco().divide(new BigDecimal(100));
-            item.setPreco(precoPorMetro.multiply(new BigDecimal(itemDto.quantidade().floatValue())));
-        } else {
-            item.setPreco(produto.getPreco().multiply(new BigDecimal(itemDto.quantidade().intValue())));
+        if (itens != null) {
+            for (Item item : itens) {
+                if (item.getProduto().getId() == produto.getId())
+                    throw new RuntimeException("Produto já está incluso no item: " + item.getId() + ", altere o produto para aumentar a quantidade.");
+            }
         }
 
-        item.setProduto(produto);
-        item.setVenda(venda);
+        if (produto.getEstoque() - itemDto.quantidade() < 0)
+            throw new RuntimeException("Estoque do produto insuficiente");
 
-        try {
-            venda.getItens().add(item);
-            cacheService.save("venda_ativa", venda);
-            
-            produto.setEstoque(novoEstoque);
-            produtoService.save(produto);
-        } catch (Exception e) {
-            venda.getItens().remove(item);
-            cacheService.save("venda_ativa", venda);
-            produto.setEstoque(estoqueAntigo);
-            produtoService.save(produto);
-        }
+        Item item = new Item(itemDto.quantidade(), produto);
+        venda.getItens().add(item);
+        cacheService.save("venda_ativa", venda);
 
         return venda;
     }
 
     @Override
-    @Transactional
-    public Venda persistVenda(VendaDTO dto) {
+    public Venda addItem(String codigoBarras) {
+
+        if (!codigoBarras.matches("[0-9]+"))
+            throw new RuntimeException("Código de barras inválido");
+
+        // try {
+        //     Long.valueOf(codigoBarras);
+        // } catch (Exception e) {
+        //     throw new RuntimeException("Código de barras inválido." + e.getMessage());
+        // }
+        
         Venda venda = getVendaFromRedis();
+        Produto produto = produtoService.getByCodigoBarras(codigoBarras);
+
+        boolean hasProduto = false;
+        float somaQuantidades = 0;
+
+        for (Item item : venda.getItens()) {
+            if (item.getProduto().getId() == produto.getId()) {
+                hasProduto = true;
+                somaQuantidades = item.getQuantidade() + 1;
+
+                if (produto.getEstoque() - somaQuantidades > 0) {
+                    item.setQuantidade(somaQuantidades);
+                    item.calcularPrecoTotal(somaQuantidades);
+                } else {
+                    throw new RuntimeException("Estoque do produto insuficiente.");
+                }
+
+                break;
+            }
+        }
+
+        if (!hasProduto) {
+            if (produto.getEstoque() >= 1) {
+                Item novoItem = new Item(1.0F, produto);
+                venda.getItens().add(novoItem);
+            } else {
+                throw new RuntimeException("Estoque do produto insuficiente.");
+            }
+        }
+
+        cacheService.save("venda_ativa", venda);
+        return venda;
+    }
+
+    @Override
+    @Transactional
+    public Venda persist(VendaDTO dto) {
+        Venda venda = getVendaFromRedis();        
         List<Item> itens = venda.getItens();
 
-        venda.setItens(new ArrayList<>());
         venda.setConcluida(true);
         venda.setFormaPagamento(dto.formaPagamento());
         venda.setDataHoraConclusao(LocalDateTime.now());
         vendaRepository.save(venda);
         
-        itemService.saveAll(itens);
-        venda.setItens(itens);
-        deleteFromRedis();
+        for (Item item : itens) {
+            item.setVenda(venda);
 
-        return save(venda);
+            Produto p = item.getProduto();
+            p.setEstoque(p.getEstoque() - item.getQuantidade());
+            produtoService.save(p);
+        }
+        
+        itemService.saveAll(itens);
+        delete();
+        return venda;
     }
     
 }

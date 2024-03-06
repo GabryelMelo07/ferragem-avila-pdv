@@ -7,9 +7,15 @@ import com.ferragem.avila.pdv.model.Produto;
 
 public interface ProdutoService {
     List<Produto> getAll();
+    
+    List<Produto> getAllInativos();
+    
+    List<Produto> getAllByDescricao(String descricao);
 
     Produto getById(long id);
 
+    Produto getByCodigoBarras(String codigoBarras);
+    
     Produto save(ProdutoDTO dto);
 
     Produto update(long id, ProdutoDTO dto);
@@ -17,8 +23,4 @@ public interface ProdutoService {
     void delete(long id);
     
     Produto save(Produto produto);
-    
-    List<Produto> getAllInativos();
-    
-    List<Produto> getAllByDescricao(String descricao);
 }

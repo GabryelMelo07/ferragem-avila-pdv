@@ -44,10 +44,7 @@ public class CacheService {
     }
 
     public boolean existsByKey(String key) {
-        if (redisTemplate.opsForValue().get(key) == null)
-            return false;
-        
-        return true;
+        return redisTemplate.hasKey(key);
     }
 
     public void delete(String key) {

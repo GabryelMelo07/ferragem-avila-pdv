@@ -30,16 +30,27 @@ public class ProdutoServiceImpl implements ProdutoService {
 
     @Override
     public List<Produto> getAllByDescricao(String descricao) {
-        return produtoRepository.findByDescricaoContainingIgnoreCase(descricao);
+        return produtoRepository.findByDescricaoContainingIgnoreCaseAndAtivoTrue(descricao);
     }
     
     @Override
     public Produto getById(long id) {
         return produtoRepository.findById(id).orElseThrow(() -> new EntityNotFoundException("Produto não existe."));
     }
-
+    
+    @Override
+    public Produto getByCodigoBarras(String codigoBarras) {
+        return produtoRepository.findByCodigoBarrasEAN13(codigoBarras);
+    }
+    
     @Override
     public Produto save(ProdutoDTO dto) {
+        try {
+            Long.valueOf(dto.codigoBarrasEAN13());
+        } catch (Exception e) {
+            throw new RuntimeException("Código de barras inválido." + e.getMessage());
+        }
+        
         Produto p = new Produto(dto);
         return produtoRepository.save(p);
     }
@@ -64,6 +75,7 @@ public class ProdutoServiceImpl implements ProdutoService {
     public void delete(long id) {
         Produto p = getById(id);
         p.setAtivo(false);
+        produtoRepository.save(p);
     }
     
 }
