@@ -1,5 +1,6 @@
 package com.ferragem.avila.pdv.service.interfaces;
 
+import java.time.LocalDate;
 import java.util.List;
 
 import com.ferragem.avila.pdv.dto.ItemDTO;
@@ -11,11 +12,15 @@ public interface VendaService {
 
     Venda getById(long id);
 
-    Venda saveInRedis();
+    List<Venda> getBetweenDataConclusao(LocalDate dataInicio, LocalDate dataFim);
+
+    Venda save();
     
-    void deleteFromRedis();
+    void delete();
 
-    Venda addItemToVenda(ItemDTO itemDto);
+    Venda addItem(ItemDTO itemDto);
 
-    Venda persistVenda(VendaDTO dto);
+    Venda addItem(String codigoBarras);
+
+    Venda persist(VendaDTO dto);
 }
