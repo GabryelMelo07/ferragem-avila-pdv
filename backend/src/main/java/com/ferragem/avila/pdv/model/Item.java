@@ -28,10 +28,10 @@ public class Item {
     @Column(nullable = false)
     private Float quantidade;
 
-    @Column
+    @Column(nullable = false, precision = 8, scale = 2)
     private BigDecimal preco;
 
-    @Column
+    @Column(nullable = false, precision = 8, scale = 2)
     private BigDecimal precoUnitarioProduto;
 
     @ManyToOne
