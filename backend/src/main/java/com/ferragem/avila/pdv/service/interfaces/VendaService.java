@@ -22,5 +22,7 @@ public interface VendaService {
 
     Venda addItem(String codigoBarras);
 
+    Venda addItem(List<ItemDTO> itensDto);
+
     Venda persist(VendaDTO dto);
 }
