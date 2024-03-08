@@ -1,5 +1,6 @@
 package com.ferragem.avila.pdv.model;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -40,6 +41,9 @@ public class Venda {
     @Column(nullable = false)
     private boolean concluida;
 
+    @Column(nullable = false, precision = 8, scale = 2)
+    private BigDecimal precoTotal;
+
     @Column(nullable = false)
     @Enumerated(EnumType.STRING)
     private FormaPagamento formaPagamento;
@@ -51,7 +55,14 @@ public class Venda {
         this.id = (id != null) ? id + 1 : 1;
         this.dataHoraInicio = LocalDateTime.now();
         this.concluida = false;
+        this.precoTotal = BigDecimal.ZERO;
         this.itens = new ArrayList<Item>();
+    }
+
+    public void calcularPrecoTotal() {
+        for (Item item : this.itens) {
+           this.precoTotal = this.precoTotal.add(item.getPreco());
+        }
     }
 
 }

@@ -30,7 +30,7 @@ public class Produto {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(length = 70, nullable = false)
+    @Column(length = 70, nullable = false, unique = true)
     private String descricao;
 
     @Column(nullable = false)
@@ -40,13 +40,16 @@ public class Produto {
     @Column(nullable = false)
     private Float estoque;
 
-    @Column(nullable = false)
+    @Column(nullable = false, precision = 8, scale = 2)
+    private BigDecimal precoFornecedor;
+
+    @Column(nullable = false, precision = 8, scale = 2)
     private BigDecimal preco;
 
     @Column(unique = true, length = 13)
     private String codigoBarrasEAN13;
 
-    @Column
+    @Column(nullable = false)
     private boolean ativo;
 
     @OneToMany(mappedBy = "produto")
@@ -57,6 +60,7 @@ public class Produto {
         this.descricao = dto.descricao();
         this.unidadeMedida = dto.unidadeMedida();
         this.estoque = dto.estoque();
+        this.precoFornecedor = dto.precoFornecedor();
         this.preco = dto.preco();
         this.codigoBarrasEAN13 = dto.codigoBarrasEAN13();
         this.ativo = true;
