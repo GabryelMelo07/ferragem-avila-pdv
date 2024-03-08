@@ -45,10 +45,12 @@ public class ProdutoServiceImpl implements ProdutoService {
     
     @Override
     public Produto save(ProdutoDTO dto) {
-        try {
-            Long.valueOf(dto.codigoBarrasEAN13());
-        } catch (Exception e) {
-            throw new RuntimeException("Código de barras inválido." + e.getMessage());
+        if (!dto.codigoBarrasEAN13().trim().isEmpty()) {
+            try {
+                Long.valueOf(dto.codigoBarrasEAN13());
+            } catch (Exception e) {
+                throw new RuntimeException("Código de barras inválido." + e.getMessage());
+            }
         }
         
         Produto p = new Produto(dto);
@@ -66,6 +68,7 @@ public class ProdutoServiceImpl implements ProdutoService {
         p.setDescricao(dto.descricao());
         p.setUnidadeMedida(dto.unidadeMedida());
         p.setEstoque(dto.estoque());
+        p.setPrecoFornecedor(dto.precoFornecedor());;
         p.setPreco(dto.preco());
         p.setCodigoBarrasEAN13(dto.codigoBarrasEAN13());
         return produtoRepository.save(p);

@@ -91,6 +91,7 @@ public class VendaServiceImpl implements VendaService {
 
         Item item = new Item(itemDto.quantidade(), produto);
         venda.getItens().add(item);
+        venda.calcularPrecoTotal();
         cacheService.save("venda_ativa", venda);
 
         return venda;
@@ -139,6 +140,35 @@ public class VendaServiceImpl implements VendaService {
             }
         }
 
+        venda.calcularPrecoTotal();
+        cacheService.save("venda_ativa", venda);
+        return venda;
+    }
+
+    @Override
+    public Venda addItem(List<ItemDTO> itensDto) {
+        Venda venda = getVendaFromRedis();
+        List<Item> itens = venda.getItens();
+
+        for (ItemDTO itemDto : itensDto) {
+            Produto produto = produtoService.getById(itemDto.produtoId());
+
+            if (produto.isAtivo() == false)
+                throw new RuntimeException("Produto inativo, para restaurar vá até a página de produtos.");
+            
+            Item item = new Item(itemDto.quantidade(), produto);
+            
+            if (itens.contains(item))
+                throw new RuntimeException("Item já incluso na venda.");
+            
+            if (produto.getEstoque() - item.getQuantidade() < 0)
+                throw new RuntimeException("Estoque insuficiente.");
+            
+            itens.add(item);
+        }
+
+        venda.getItens().addAll(itens);
+        venda.calcularPrecoTotal();
         cacheService.save("venda_ativa", venda);
         return venda;
     }
