@@ -58,6 +58,11 @@ public class VendaController {
     public ResponseEntity<Venda> addItemToVenda(@RequestParam String codigoBarras) {
         return ResponseEntity.ok().body(vendaService.addItem(codigoBarras));
     }
+
+    @PostMapping("/add-itens/lista/produtos")
+    public ResponseEntity<Venda> addItemToVenda(@RequestBody List<ItemDTO> itens) {
+        return ResponseEntity.ok().body(vendaService.addItem(itens));
+    }
     
     @PostMapping("/concluir")
     public ResponseEntity<Venda> persistVenda(@RequestBody VendaDTO dto) {
