@@ -2,9 +2,12 @@ package com.ferragem.avila.pdv.service;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import com.ferragem.avila.pdv.dto.ItemDTO;
@@ -36,8 +39,8 @@ public class VendaServiceImpl implements VendaService {
     private CacheService cacheService;
     
     @Override
-    public List<Venda> getAll() {
-        return vendaRepository.findAll();
+    public Page<Venda> getAll(Pageable pageable) {
+        return vendaRepository.findAll(pageable);
     }
 
     @Override
@@ -46,8 +49,23 @@ public class VendaServiceImpl implements VendaService {
     }
 
     @Override
-    public List<Venda> getBetweenDataConclusao(LocalDate dataInicio, LocalDate dataFim) {
-        return vendaRepository.findByDataHoraConclusaoBetween(dataInicio, dataFim);
+    public Page<Venda> getBetweenDataConclusao(Pageable pageable, LocalDate dataInicio, LocalDate dataFim) {
+        return vendaRepository.findByDataHoraConclusaoBetween(pageable, dataInicio, dataFim);
+    }
+
+    @Override
+    public List<Produto> getProdutosFromVendaAtiva() {
+        if (!cacheService.existsByKey("venda_ativa"))
+            throw new RuntimeException("Não existe venda ativa.");
+
+        Venda venda = getVendaFromRedis();
+        List<Produto> produtos = new ArrayList<>();
+
+        for (Item item : venda.getItens()) {
+            produtos.add(item.getProduto());
+        }
+        
+        return produtos;
     }
     
     @Override
@@ -61,7 +79,18 @@ public class VendaServiceImpl implements VendaService {
     }
 
     @Override
+    public boolean existsVendaAtiva() {
+        if (!cacheService.existsByKey("venda_ativa"))
+            return false;
+
+        return true;
+    }
+
+    @Override
     public void delete() {
+        if (!cacheService.existsByKey("venda_ativa"))
+            throw new RuntimeException("Não existe venda ativa.");
+
         cacheService.delete("venda_ativa");
     }
 
