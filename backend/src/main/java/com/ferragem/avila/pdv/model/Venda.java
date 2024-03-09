@@ -41,7 +41,7 @@ public class Venda {
     @Column(nullable = false)
     private boolean concluida;
 
-    @Column(nullable = false, precision = 8, scale = 2)
+    @Column(nullable = false, precision = 6, scale = 2)
     private BigDecimal precoTotal;
 
     @Column(nullable = false)
@@ -60,6 +60,8 @@ public class Venda {
     }
 
     public void calcularPrecoTotal() {
+        this.precoTotal = BigDecimal.ZERO;
+        
         for (Item item : this.itens) {
            this.precoTotal = this.precoTotal.add(item.getPreco());
         }

@@ -1,8 +1,8 @@
 package com.ferragem.avila.pdv.controller;
 
-import java.util.List;
-
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -18,7 +18,6 @@ import com.ferragem.avila.pdv.model.Produto;
 import com.ferragem.avila.pdv.service.interfaces.ProdutoService;
 import org.springframework.web.bind.annotation.RequestParam;
 
-
 @RestController
 @RequestMapping("/produto")
 public class ProdutoController {
@@ -31,18 +30,18 @@ public class ProdutoController {
     }
 
     @GetMapping("/ativos")
-    public ResponseEntity<List<Produto>> getAllProdutosAtivos() {
-        return ResponseEntity.ok().body(produtoService.getAll());
+    public ResponseEntity<Page<Produto>> getAllProdutosAtivos(Pageable pageable) {
+        return ResponseEntity.ok().body(produtoService.getAll(pageable));
     }
 
     @GetMapping("/inativos")
-    public ResponseEntity<List<Produto>> getAllProdutosInativos() {
-        return ResponseEntity.ok().body(produtoService.getAllInativos());
+    public ResponseEntity<Page<Produto>> getAllProdutosInativos(Pageable pageable) {
+        return ResponseEntity.ok().body(produtoService.getAllInativos(pageable));
     }
 
     @GetMapping("/descricao/{descricao}")
-    public ResponseEntity<List<Produto>> getAllProdutosByDescricao(@RequestParam String descricao) {
-        return ResponseEntity.ok().body(produtoService.getAllByDescricao(descricao));
+    public ResponseEntity<Page<Produto>> getAllProdutosByDescricao(Pageable pageable, @RequestParam String descricao) {
+        return ResponseEntity.ok().body(produtoService.getAllByDescricao(pageable, descricao));
     }
     
 

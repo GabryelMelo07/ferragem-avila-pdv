@@ -1,8 +1,8 @@
 package com.ferragem.avila.pdv.service;
 
-import java.util.List;
-
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import com.ferragem.avila.pdv.dto.ProdutoDTO;
@@ -19,18 +19,18 @@ public class ProdutoServiceImpl implements ProdutoService {
     private ProdutoRepository produtoRepository;
     
     @Override
-    public List<Produto> getAll() {
-        return produtoRepository.findByAtivoTrue();
+    public Page<Produto> getAll(Pageable pageable) {
+        return produtoRepository.findByAtivoTrue(pageable);
     }
 
     @Override
-    public List<Produto> getAllInativos() {
-        return produtoRepository.findByAtivoFalse();
+    public Page<Produto> getAllInativos(Pageable pageable) {
+        return produtoRepository.findByAtivoFalse(pageable);
     }
 
     @Override
-    public List<Produto> getAllByDescricao(String descricao) {
-        return produtoRepository.findByDescricaoContainingIgnoreCaseAndAtivoTrue(descricao);
+    public Page<Produto> getAllByDescricao(Pageable pageable, String descricao) {
+        return produtoRepository.findByDescricaoContainingIgnoreCaseAndAtivoTrue(pageable, descricao);
     }
     
     @Override
@@ -41,6 +41,11 @@ public class ProdutoServiceImpl implements ProdutoService {
     @Override
     public Produto getByCodigoBarras(String codigoBarras) {
         return produtoRepository.findByCodigoBarrasEAN13(codigoBarras);
+    }
+    
+    @Override
+    public Produto save(Produto produto) {
+        return produtoRepository.save(produto);
     }
     
     @Override
@@ -55,11 +60,6 @@ public class ProdutoServiceImpl implements ProdutoService {
         
         Produto p = new Produto(dto);
         return produtoRepository.save(p);
-    }
-
-    @Override
-    public Produto save(Produto produto) {
-        return produtoRepository.save(produto);
     }
 
     @Override
