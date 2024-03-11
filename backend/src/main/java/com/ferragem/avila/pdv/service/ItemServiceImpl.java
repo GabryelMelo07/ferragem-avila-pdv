@@ -16,11 +16,6 @@ public class ItemServiceImpl implements ItemService {
     private ItemRepository itemRepository;
     
     @Override
-    public List<Item> getAllByVendaId(long id) {
-        return itemRepository.findAllByVendaId(id);
-    }
-    
-    @Override
     public Item save(Item item) {
         return itemRepository.save(item);
     }

@@ -11,7 +11,7 @@ import com.ferragem.avila.pdv.model.Produto;
 public interface ProdutoRepository extends PagingAndSortingRepository<Produto, Long> {
     Produto save(Produto produto);
     
-    Optional<Produto> findById(Long id);
+    Optional<Produto> findByIdAndAtivoTrue(Long id);
     
     Page<Produto> findByAtivoTrue(Pageable pageable);
 

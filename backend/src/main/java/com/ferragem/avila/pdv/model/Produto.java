@@ -1,5 +1,6 @@
 package com.ferragem.avila.pdv.model;
 
+import java.io.Serializable;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
@@ -24,7 +25,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @Entity
 @Table(name = "produto")
-public class Produto {
+public class Produto implements Serializable {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -46,7 +47,7 @@ public class Produto {
     @Column(nullable = false, precision = 8, scale = 2)
     private BigDecimal preco;
 
-    @Column(unique = true, length = 13)
+    @Column(unique = true, length = 13, nullable = true)
     private String codigoBarrasEAN13;
 
     @Column(nullable = false)
@@ -62,9 +63,25 @@ public class Produto {
         this.estoque = dto.estoque();
         this.precoFornecedor = dto.precoFornecedor();
         this.preco = dto.preco();
-        this.codigoBarrasEAN13 = dto.codigoBarrasEAN13();
+        this.codigoBarrasEAN13 = isCodBarrasEmpty(dto.codigoBarrasEAN13()) ? null : dto.codigoBarrasEAN13();
         this.ativo = true;
         this.itens = new ArrayList<Item>();
+    }
+
+    public Produto(String descricao, UnidadeMedida unidadeMedida, Float estoque, BigDecimal precoFornecedor,
+            BigDecimal preco, String codigoBarrasEAN13) {
+        this.descricao = descricao;
+        this.unidadeMedida = unidadeMedida;
+        this.estoque = estoque;
+        this.precoFornecedor = precoFornecedor;
+        this.preco = preco;
+        this.codigoBarrasEAN13 = isCodBarrasEmpty(codigoBarrasEAN13) ? null : codigoBarrasEAN13;
+        this.ativo = true;
+        this.itens = new ArrayList<Item>();
+    }
+
+    private boolean isCodBarrasEmpty(String codBarras) {
+        return codBarras.trim().isEmpty();
     }
     
 }

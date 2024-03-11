@@ -1,5 +1,6 @@
 package com.ferragem.avila.pdv.model;
 
+import java.io.Serializable;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -24,7 +25,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @Entity
 @Table(name = "venda")
-public class Venda {
+public class Venda implements Serializable {
     
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

@@ -1,5 +1,7 @@
 package com.ferragem.avila.pdv.controller;
 
+import java.io.IOException;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -12,9 +14,11 @@ import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
 
 import com.ferragem.avila.pdv.dto.ProdutoDTO;
 import com.ferragem.avila.pdv.model.Produto;
+import com.ferragem.avila.pdv.model.utils.ProdutosFromCsv;
 import com.ferragem.avila.pdv.service.interfaces.ProdutoService;
 import org.springframework.web.bind.annotation.RequestParam;
 
@@ -40,10 +44,9 @@ public class ProdutoController {
     }
 
     @GetMapping("/descricao/{descricao}")
-    public ResponseEntity<Page<Produto>> getAllProdutosByDescricao(Pageable pageable, @RequestParam String descricao) {
+    public ResponseEntity<Page<Produto>> getAllProdutosByDescricao(Pageable pageable, @PathVariable String descricao) {
         return ResponseEntity.ok().body(produtoService.getAllByDescricao(pageable, descricao));
     }
-    
 
     @GetMapping("/{id}")
     public ResponseEntity<Produto> getById(@PathVariable int id) {
@@ -53,6 +56,16 @@ public class ProdutoController {
     @PostMapping
     public ResponseEntity<Produto> save(@RequestBody ProdutoDTO produtoDto) {
         return ResponseEntity.ok().body(produtoService.save(produtoDto));
+    }
+
+    @PostMapping("/importar-csv")
+    public ResponseEntity<ProdutosFromCsv> saveFromCsv(@RequestParam MultipartFile file) {
+        try {
+            return ResponseEntity.ok().body(produtoService.saveProductsFromCsv(file));
+        } catch (IOException e) {
+            e.printStackTrace();
+            return ResponseEntity.badRequest().build();
+        }
     }
 
     @PutMapping("/{id}")
