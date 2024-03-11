@@ -1,7 +1,9 @@
 package com.ferragem.avila.pdv.service;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.CacheManager;
 import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.stereotype.Component;
 import org.springframework.stereotype.Service;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -9,7 +11,11 @@ import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 @Service
+@Component
 public class CacheService {
+    
+    @Autowired
+    private CacheManager cacheManager;
     
     @Autowired
     private RedisTemplate<String, Object> redisTemplate;
@@ -49,6 +55,12 @@ public class CacheService {
 
     public void delete(String key) {
         redisTemplate.delete(key);
+    }
+
+    public void clearCacheByValue(String value) {
+        cacheManager.getCacheNames().stream()
+                .filter(cacheName -> cacheName.contains(value))
+                .forEach(cacheName -> cacheManager.getCache(cacheName).clear());
     }
     
 }
