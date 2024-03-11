@@ -6,6 +6,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -38,16 +39,19 @@ public class VendaServiceImpl implements VendaService {
     @Autowired
     private CacheService cacheService;
     
+    @Cacheable(value = "vendas", key = "'page_' + #pageable.pageNumber")
     @Override
     public Page<Venda> getAll(Pageable pageable) {
         return vendaRepository.findAll(pageable);
     }
 
+    @Cacheable(value = "venda_by_id", key = "#id")
     @Override
     public Venda getById(long id) {
         return vendaRepository.findById(id).orElseThrow(() -> new EntityNotFoundException("Venda não existe."));
     }
 
+    @Cacheable(value = "vendas_between_datas", key = "'page_' + #pageable.pageNumber")
     @Override
     public Page<Venda> getBetweenDataConclusao(Pageable pageable, LocalDate dataInicio, LocalDate dataFim) {
         return vendaRepository.findByDataHoraConclusaoBetween(pageable, dataInicio, dataFim);
@@ -55,7 +59,7 @@ public class VendaServiceImpl implements VendaService {
 
     @Override
     public List<Produto> getProdutosFromVendaAtiva() {
-        if (!cacheService.existsByKey("venda_ativa"))
+        if (!existsVendaAtiva())
             throw new RuntimeException("Não existe venda ativa.");
 
         Venda venda = getVendaFromRedis();
@@ -70,7 +74,7 @@ public class VendaServiceImpl implements VendaService {
     
     @Override
     public Venda save() {          
-        if (cacheService.existsByKey("venda_ativa"))
+        if (existsVendaAtiva())
             throw new RuntimeException("Já existe uma venda ativa.");
             
         Venda v = new Venda(vendaRepository.findLastId());
@@ -88,14 +92,14 @@ public class VendaServiceImpl implements VendaService {
 
     @Override
     public void delete() {
-        if (!cacheService.existsByKey("venda_ativa"))
+        if (!existsVendaAtiva())
             throw new RuntimeException("Não existe venda ativa.");
 
         cacheService.delete("venda_ativa");
     }
 
     private Venda getVendaFromRedis() {
-        if (!cacheService.existsByKey("venda_ativa"))
+        if (!existsVendaAtiva())
             throw new RuntimeException("Não existe venda ativa.");
         
         Venda venda = (Venda) cacheService.find("venda_ativa", Venda.class);
@@ -110,8 +114,8 @@ public class VendaServiceImpl implements VendaService {
 
         if (itens != null) {
             for (Item item : itens) {
-                if (item.getProduto().getId() == produto.getId())
-                    throw new RuntimeException("Produto já está incluso no item: " + item.getId() + ", altere o produto para aumentar a quantidade.");
+                if (item.getProduto().getId().equals(produto.getId()))
+                    throw new RuntimeException("Produto já está incluso em um item da venda, altere a quantidade do item.");
             }
         }
 
@@ -145,7 +149,7 @@ public class VendaServiceImpl implements VendaService {
         float somaQuantidades = 0;
 
         for (Item item : venda.getItens()) {
-            if (item.getProduto().getId() == produto.getId()) {
+            if (item.getProduto().getId().equals(produto.getId())) {
                 hasProduto = true;
                 somaQuantidades = item.getQuantidade() + 1;
 
@@ -161,7 +165,7 @@ public class VendaServiceImpl implements VendaService {
         }
 
         if (!hasProduto) {
-            if (produto.getEstoque() >= 1) {
+            if (produto.getEstoque() > 0) {
                 Item novoItem = new Item(1.0F, produto);
                 venda.getItens().add(novoItem);
             } else {
@@ -184,19 +188,20 @@ public class VendaServiceImpl implements VendaService {
 
             if (produto.isAtivo() == false)
                 throw new RuntimeException("Produto inativo, para restaurar vá até a página de produtos.");
-            
-            Item item = new Item(itemDto.quantidade(), produto);
-            
-            if (itens.contains(item))
-                throw new RuntimeException("Item já incluso na venda.");
-            
-            if (produto.getEstoque() - item.getQuantidade() < 0)
+
+            if (itens != null) {
+                if (itens.stream().anyMatch(item -> item.getProduto().getId().equals(produto.getId())))
+                    throw new RuntimeException("Produto já está incluso em um item da venda, altere a quantidade do item.");
+            }
+
+            if (produto.getEstoque() - itemDto.quantidade() < 0)
                 throw new RuntimeException("Estoque insuficiente.");
-            
+
+            Item item = new Item(itemDto.quantidade(), produto);
             itens.add(item);
         }
 
-        venda.getItens().addAll(itens);
+        venda.setItens(itens);
         venda.calcularPrecoTotal();
         cacheService.save("venda_ativa", venda);
         return venda;
