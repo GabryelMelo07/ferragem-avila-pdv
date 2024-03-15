@@ -32,5 +32,7 @@ public interface VendaService {
 
     Venda addItem(List<ItemDTO> itensDto);
 
+    Venda updateItemQuantity(float quantidade, long produtoId);
+
     Venda persist(VendaDTO dto);
 }

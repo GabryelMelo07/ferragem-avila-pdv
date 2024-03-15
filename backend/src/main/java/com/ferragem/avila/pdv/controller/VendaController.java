@@ -80,6 +80,11 @@ public class VendaController {
     public ResponseEntity<Venda> addItemToVenda(@RequestBody List<ItemDTO> itens) {
         return ResponseEntity.ok().body(vendaService.addItem(itens));
     }
+
+    @PostMapping("/update/item/quantidade")
+    public ResponseEntity<Venda> updateItemQuantity(@RequestParam float quantidade, long produtoId) {
+        return ResponseEntity.ok().body(vendaService.updateItemQuantity(quantidade, produtoId));
+    }
     
     @PostMapping("/concluir")
     public ResponseEntity<Venda> persistVenda(@RequestBody VendaDTO dto) {
