@@ -35,10 +35,10 @@ public class VendaServiceImpl implements VendaService {
 
     @Autowired
     private ProdutoService produtoService;
-    
+
     @Autowired
     private CacheService cacheService;
-    
+
     @Cacheable(value = "vendas", key = "'page_' + #pageable.pageNumber")
     @Override
     public Page<Venda> getAll(Pageable pageable) {
@@ -68,15 +68,15 @@ public class VendaServiceImpl implements VendaService {
         for (Item item : venda.getItens()) {
             produtos.add(item.getProduto());
         }
-        
+
         return produtos;
     }
-    
+
     @Override
-    public Venda save() {          
+    public Venda save() {
         if (existsVendaAtiva())
             throw new RuntimeException("Já existe uma venda ativa.");
-            
+
         Venda v = new Venda(vendaRepository.findLastId());
         cacheService.save("venda_ativa", v);
         return v;
@@ -101,7 +101,7 @@ public class VendaServiceImpl implements VendaService {
     private Venda getVendaFromRedis() {
         if (!existsVendaAtiva())
             throw new RuntimeException("Não existe venda ativa.");
-        
+
         Venda venda = (Venda) cacheService.find("venda_ativa", Venda.class);
         return venda;
     }
@@ -115,7 +115,8 @@ public class VendaServiceImpl implements VendaService {
         if (itens != null) {
             for (Item item : itens) {
                 if (item.getProduto().getId().equals(produto.getId()))
-                    throw new RuntimeException("Produto já está incluso em um item da venda, altere a quantidade do item.");
+                    throw new RuntimeException(
+                            "Produto já está incluso em um item da venda, altere a quantidade do item.");
             }
         }
 
@@ -137,11 +138,11 @@ public class VendaServiceImpl implements VendaService {
             throw new RuntimeException("Código de barras inválido");
 
         // try {
-        //     Long.valueOf(codigoBarras);
+        // Long.valueOf(codigoBarras);
         // } catch (Exception e) {
-        //     throw new RuntimeException("Código de barras inválido." + e.getMessage());
+        // throw new RuntimeException("Código de barras inválido." + e.getMessage());
         // }
-        
+
         Venda venda = getVendaFromRedis();
         Produto produto = produtoService.getByCodigoBarras(codigoBarras);
 
@@ -191,7 +192,8 @@ public class VendaServiceImpl implements VendaService {
 
             if (itens != null) {
                 if (itens.stream().anyMatch(item -> item.getProduto().getId().equals(produto.getId())))
-                    throw new RuntimeException("Produto já está incluso em um item da venda, altere a quantidade do item.");
+                    throw new RuntimeException(
+                            "Produto já está incluso em um item da venda, altere a quantidade do item.");
             }
 
             if (produto.getEstoque() - itemDto.quantidade() < 0)
@@ -208,16 +210,41 @@ public class VendaServiceImpl implements VendaService {
     }
 
     @Override
+    public Venda updateItemQuantity(float quantidade, long produtoId) {
+        Venda venda = getVendaFromRedis();
+
+        venda.getItens()
+                .stream()
+                .filter(item -> item.getProduto().getId().equals(produtoId))
+                .findFirst()
+                .ifPresentOrElse(
+                        item -> {
+                            if (item.getProduto().getEstoque() - quantidade < 0)
+                                throw new RuntimeException("Estoque insuficiente.");
+
+                            item.setQuantidade(quantidade);
+                            item.calcularPrecoTotal(quantidade);
+                        },
+                        () -> {
+                            throw new RuntimeException("Não existe nenhum item com este produto na venda.");
+                        });
+        
+        venda.calcularPrecoTotal();
+        cacheService.save("venda_ativa", venda);
+        return venda;
+    }
+
+    @Override
     @Transactional
     public Venda persist(VendaDTO dto) {
-        Venda venda = getVendaFromRedis();        
+        Venda venda = getVendaFromRedis();
         List<Item> itens = venda.getItens();
 
         venda.setConcluida(true);
         venda.setFormaPagamento(dto.formaPagamento());
         venda.setDataHoraConclusao(LocalDateTime.now());
         vendaRepository.save(venda);
-        
+
         for (Item item : itens) {
             item.setVenda(venda);
 
@@ -225,10 +252,10 @@ public class VendaServiceImpl implements VendaService {
             p.setEstoque(p.getEstoque() - item.getQuantidade());
             produtoService.save(p);
         }
-        
+
         itemService.saveAll(itens);
         delete();
         return venda;
     }
-    
+
 }
