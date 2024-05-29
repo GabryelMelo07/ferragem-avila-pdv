@@ -63,7 +63,7 @@ public class Produto implements Serializable {
         this.estoque = dto.estoque();
         this.precoFornecedor = dto.precoFornecedor();
         this.preco = dto.preco();
-        this.codigoBarrasEAN13 = isCodBarrasEmpty(dto.codigoBarrasEAN13()) ? null : dto.codigoBarrasEAN13();
+        this.codigoBarrasEAN13 = dto.codigoBarrasEAN13();
         this.ativo = true;
         this.itens = new ArrayList<Item>();
     }
@@ -75,13 +75,9 @@ public class Produto implements Serializable {
         this.estoque = estoque;
         this.precoFornecedor = precoFornecedor;
         this.preco = preco;
-        this.codigoBarrasEAN13 = isCodBarrasEmpty(codigoBarrasEAN13) ? null : codigoBarrasEAN13;
+        this.codigoBarrasEAN13 = codigoBarrasEAN13;
         this.ativo = true;
         this.itens = new ArrayList<Item>();
-    }
-
-    private boolean isCodBarrasEmpty(String codBarras) {
-        return codBarras.trim().isEmpty();
     }
     
 }

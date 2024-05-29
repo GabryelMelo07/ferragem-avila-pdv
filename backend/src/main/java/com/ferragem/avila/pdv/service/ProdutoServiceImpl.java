@@ -14,6 +14,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import com.ferragem.avila.pdv.dto.ProdutoDTO;
+import com.ferragem.avila.pdv.exceptions.ProdutoNotFoundException;
 import com.ferragem.avila.pdv.model.Produto;
 import com.ferragem.avila.pdv.model.utils.CsvToProduto;
 import com.ferragem.avila.pdv.model.utils.ProdutoComErro;
@@ -22,8 +23,6 @@ import com.ferragem.avila.pdv.repository.ProdutoRepository;
 import com.ferragem.avila.pdv.service.interfaces.ProdutoService;
 import com.opencsv.bean.CsvToBean;
 import com.opencsv.bean.CsvToBeanBuilder;
-
-import jakarta.persistence.EntityNotFoundException;
 
 @Service
 public class ProdutoServiceImpl implements ProdutoService {
@@ -55,7 +54,7 @@ public class ProdutoServiceImpl implements ProdutoService {
     @Cacheable(value = "produto_by_id", key = "#id")
     @Override
     public Produto getById(long id) {
-        return produtoRepository.findByIdAndAtivoTrue(id).orElseThrow(() -> new EntityNotFoundException("Produto não existe."));
+        return produtoRepository.findByIdAndAtivoTrue(id).orElseThrow(() -> new ProdutoNotFoundException("Produto não existe."));
     }
     
     @Cacheable(value = "produto_by_codbarras", key = "#codigoBarras")
@@ -119,21 +118,21 @@ public class ProdutoServiceImpl implements ProdutoService {
         List<CsvToProduto> csvToProduto = parseCsvFile(file);
         ProdutosFromCsv produtosFromCsv = new ProdutosFromCsv();
 
-        for (CsvToProduto produtoCsv : csvToProduto) {
+        for (CsvToProduto produto : csvToProduto) {
             try {
                 Produto p = new Produto(
-                    produtoCsv.getDescricao(),
-                    produtoCsv.getUnidadeMedida(),
-                    produtoCsv.getEstoque(),
-                    produtoCsv.getPrecoFornecedor(),
-                    produtoCsv.getPreco(),
-                    produtoCsv.getCodigoBarrasEAN13()
+                    produto.getDescricao(),
+                    produto.getUnidadeMedida(),
+                    produto.getEstoque(),
+                    produto.getPrecoFornecedor(),
+                    produto.getPreco(),
+                    produto.getCodigoBarrasEAN13()
                 );
 
                 save(p);
                 produtosFromCsv.somar();
             } catch (Exception e) {
-                produtosFromCsv.getProdutosComErro().add(new ProdutoComErro(produtoCsv, e.getMessage()));
+                produtosFromCsv.getProdutosComErro().add(new ProdutoComErro(produto, e.getMessage()));
             }
         }
 
