@@ -7,6 +7,7 @@ import java.io.Reader;
 import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -14,7 +15,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import com.ferragem.avila.pdv.dto.ProdutoDTO;
-import com.ferragem.avila.pdv.exceptions.ProdutoNotFoundException;
+import com.ferragem.avila.pdv.exceptions.CodigoBarrasInvalidoException;
+import com.ferragem.avila.pdv.exceptions.ProdutoNaoEncontradoException;
 import com.ferragem.avila.pdv.model.Produto;
 import com.ferragem.avila.pdv.model.utils.CsvToProduto;
 import com.ferragem.avila.pdv.model.utils.ProdutoComErro;
@@ -29,9 +31,6 @@ public class ProdutoServiceImpl implements ProdutoService {
 
     @Autowired
     private ProdutoRepository produtoRepository;
-
-    @Autowired
-    private CacheService cacheService;
     
     @Cacheable(value = "produtos_ativos", key = "'pagina_' + #pageable.pageNumber")
     @Override
@@ -54,7 +53,7 @@ public class ProdutoServiceImpl implements ProdutoService {
     @Cacheable(value = "produto_by_id", key = "#id")
     @Override
     public Produto getById(long id) {
-        return produtoRepository.findByIdAndAtivoTrue(id).orElseThrow(() -> new ProdutoNotFoundException("Produto não existe."));
+        return produtoRepository.findByIdAndAtivoTrue(id).orElseThrow(() -> new ProdutoNaoEncontradoException("Produto não existe."));
     }
     
     @Cacheable(value = "produto_by_codbarras", key = "#codigoBarras")
@@ -63,21 +62,16 @@ public class ProdutoServiceImpl implements ProdutoService {
         return produtoRepository.findByCodigoBarrasEAN13(codigoBarras);
     }
     
+    @CacheEvict(value = "produtos_ativos", allEntries = true)
     @Override
     public Produto save(Produto produto) {
-        cacheService.clearCacheByValue("produto");
         return produtoRepository.save(produto);
     }
     
     @Override
     public Produto save(ProdutoDTO dto) {
-        if (!dto.codigoBarrasEAN13().trim().isEmpty()) {
-            try {
-                Long.valueOf(dto.codigoBarrasEAN13());
-            } catch (Exception e) {
-                throw new RuntimeException("Código de barras inválido." + e.getMessage());
-            }
-        }
+        if (!dto.codigoBarrasEAN13().matches("^\\d{13}$"))
+            throw new CodigoBarrasInvalidoException();
         
         Produto p = new Produto(dto);
         return save(p);
@@ -85,6 +79,9 @@ public class ProdutoServiceImpl implements ProdutoService {
 
     @Override
     public Produto update(long id, ProdutoDTO dto) {
+        if (!dto.codigoBarrasEAN13().matches("^\\d{13}$"))
+            throw new CodigoBarrasInvalidoException();
+        
         Produto p = getById(id);
         p.setDescricao(dto.descricao());
         p.setUnidadeMedida(dto.unidadeMedida());

@@ -19,10 +19,8 @@ import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
 import jakarta.validation.constraints.FutureOrPresent;
 import lombok.Data;
-import lombok.NoArgsConstructor;
 
 @Data
-@NoArgsConstructor
 @Entity
 @Table(name = "venda")
 public class Venda implements Serializable {
@@ -35,7 +33,7 @@ public class Venda implements Serializable {
     @FutureOrPresent
     private LocalDateTime dataHoraInicio;
 
-    @Column(nullable = false)
+    @Column
     @FutureOrPresent
     private LocalDateTime dataHoraConclusao;
     
@@ -45,15 +43,14 @@ public class Venda implements Serializable {
     @Column(nullable = false, precision = 6, scale = 2)
     private BigDecimal precoTotal;
 
-    @Column(nullable = false)
+    @Column
     @Enumerated(EnumType.STRING)
     private FormaPagamento formaPagamento;
     
     @OneToMany(mappedBy = "venda")
     private List<Item> itens;
 
-    public Venda(Long id) {
-        this.id = (id != null) ? id + 1 : 1;
+    public Venda() {
         this.dataHoraInicio = LocalDateTime.now();
         this.concluida = false;
         this.precoTotal = BigDecimal.ZERO;
@@ -61,10 +58,12 @@ public class Venda implements Serializable {
     }
 
     public void calcularPrecoTotal() {
-        this.precoTotal = BigDecimal.ZERO;
-        
-        for (Item item : this.itens) {
-           this.precoTotal = this.precoTotal.add(item.getPreco());
+        if (!this.itens.isEmpty()) {
+            this.precoTotal = BigDecimal.ZERO;
+            
+            for (Item item : this.itens) {
+               this.precoTotal = this.precoTotal.add(item.getPreco());
+            }
         }
     }
 

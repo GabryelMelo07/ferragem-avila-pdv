@@ -14,10 +14,11 @@ public interface VendaRepository extends PagingAndSortingRepository<Venda, Long>
     Venda save(Venda venda);
     
     Optional<Venda> findById(Long id);
-    
-    @Query(value = "SELECT id FROM venda ORDER BY id DESC LIMIT 1", nativeQuery = true)
-    Long findLastId();
 
+    Optional<Venda> findByConcluidaFalse();
+
+    void deleteById(Long id);
+    
     @Query("SELECT v FROM Venda v WHERE CAST(v.dataHoraConclusao AS date) BETWEEN :dataInicio AND :dataFim")
     Page<Venda> findByDataHoraConclusaoBetween(Pageable pageable, LocalDate dataInicio, LocalDate dataFim);
 }

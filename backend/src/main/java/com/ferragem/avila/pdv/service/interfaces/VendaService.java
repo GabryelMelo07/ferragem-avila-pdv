@@ -2,6 +2,7 @@ package com.ferragem.avila.pdv.service.interfaces;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Optional;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -22,7 +23,9 @@ public interface VendaService {
 
     Venda save();
 
-    boolean existsVendaAtiva();
+    Venda save(Venda venda);
+
+    Optional<Venda> getVendaAtiva();
     
     void delete();
 
@@ -32,7 +35,5 @@ public interface VendaService {
 
     Venda addItem(List<ItemDTO> itensDto);
 
-    Venda updateItemQuantity(float quantidade, long produtoId);
-
-    Venda persist(VendaDTO dto);
+    void concluirVenda(VendaDTO dto);
 }

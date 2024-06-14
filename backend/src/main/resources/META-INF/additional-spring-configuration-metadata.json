@@ -1,0 +1,12 @@
+{"properties": [
+  {
+    "name": "use.swagger",
+    "type": "java.lang.String",
+    "description": "This annotation turns swagger enabled in dev mode and the default value is false."
+  },
+  {
+    "name": "api.security.token.secret",
+    "type": "java.lang.String",
+    "description": "Json Web Token Secret, used to encrypt and decrypt the JWT Tokens on HTTPs Requests."
+  }
+]}

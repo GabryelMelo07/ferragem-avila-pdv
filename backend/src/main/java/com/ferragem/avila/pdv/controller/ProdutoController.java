@@ -5,6 +5,7 @@ import java.io.IOException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -20,7 +21,10 @@ import com.ferragem.avila.pdv.dto.ProdutoDTO;
 import com.ferragem.avila.pdv.model.Produto;
 import com.ferragem.avila.pdv.model.utils.ProdutosFromCsv;
 import com.ferragem.avila.pdv.service.interfaces.ProdutoService;
-import org.springframework.web.bind.annotation.RequestParam;
+
+import jakarta.validation.Valid;
+
+import org.springframework.web.bind.annotation.RequestPart;
 
 @RestController
 @RequestMapping("/produto")
@@ -54,12 +58,12 @@ public class ProdutoController {
     }
 
     @PostMapping
-    public ResponseEntity<Produto> save(@RequestBody ProdutoDTO produtoDto) {
+    public ResponseEntity<Produto> save(@Valid @RequestBody ProdutoDTO produtoDto) {
         return ResponseEntity.ok().body(produtoService.save(produtoDto));
     }
 
-    @PostMapping("/importar-csv")
-    public ResponseEntity<ProdutosFromCsv> saveFromCsv(@RequestParam MultipartFile file) {
+    @PostMapping(path = "/importar-csv", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<ProdutosFromCsv> saveFromCsv(@RequestPart MultipartFile file) {
         try {
             return ResponseEntity.ok().body(produtoService.saveProductsFromCsv(file));
         } catch (IOException e) {
@@ -69,7 +73,7 @@ public class ProdutoController {
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<Produto> update(@PathVariable int id, @RequestBody ProdutoDTO produtoDto) {
+    public ResponseEntity<Produto> update(@PathVariable int id,  @Valid @RequestBody ProdutoDTO produtoDto) {
         return ResponseEntity.ok().body(produtoService.update(id, produtoDto));
     }
 
