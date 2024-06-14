@@ -15,16 +15,34 @@ import com.ferragem.avila.pdv.model.utils.RestErrorMessage;
 @ControllerAdvice
 public class ExceptionHandlerController extends ResponseEntityExceptionHandler {
 
-    @ExceptionHandler(ProdutoNotFoundException.class)
-    private ResponseEntity<RestErrorMessage> produtoNotFoundHandler(ProdutoNotFoundException exception) {
+    @ExceptionHandler(ProdutoNaoEncontradoException.class)
+    private ResponseEntity<RestErrorMessage> produtoNotFoundHandler(ProdutoNaoEncontradoException exception) {
         RestErrorMessage response = new RestErrorMessage(LocalDateTime.now().atOffset(ZoneOffset.ofHours(-3)).toLocalDateTime(), HttpStatus.NOT_FOUND, exception.getMessage());
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(response);
     }
 
-    @ExceptionHandler(Exception.class)
-    private ResponseEntity<RestErrorMessage> genericExceptionHandler(Exception exception) {
+    @ExceptionHandler(ProdutoSemEstoqueException.class)
+    private ResponseEntity<RestErrorMessage> produtoNotFoundHandler(ProdutoSemEstoqueException exception) {
         RestErrorMessage response = new RestErrorMessage(LocalDateTime.now().atOffset(ZoneOffset.ofHours(-3)).toLocalDateTime(), HttpStatus.BAD_REQUEST, exception.getMessage());
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
+    }
+
+    @ExceptionHandler(CodigoBarrasInvalidoException.class)
+    private ResponseEntity<RestErrorMessage> produtoNotFoundHandler(CodigoBarrasInvalidoException exception) {
+        RestErrorMessage response = new RestErrorMessage(LocalDateTime.now().atOffset(ZoneOffset.ofHours(-3)).toLocalDateTime(), HttpStatus.BAD_REQUEST, exception.getMessage());
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
+    }
+
+    @ExceptionHandler(VendaInativaException.class)
+    private ResponseEntity<RestErrorMessage> produtoNotFoundHandler(VendaInativaException exception) {
+        RestErrorMessage response = new RestErrorMessage(LocalDateTime.now().atOffset(ZoneOffset.ofHours(-3)).toLocalDateTime(), HttpStatus.BAD_REQUEST, exception.getMessage());
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
+    }
+
+    @ExceptionHandler(Exception.class)
+    private ResponseEntity<RestErrorMessage> genericExceptionHandler(Exception exception) {
+        RestErrorMessage response = new RestErrorMessage(LocalDateTime.now().atOffset(ZoneOffset.ofHours(-3)).toLocalDateTime(), HttpStatus.INTERNAL_SERVER_ERROR, exception.getMessage());
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
     }
 
     @ExceptionHandler(IOException.class)

@@ -43,23 +43,32 @@ public class Item {
     @JsonIgnore
     private Venda venda;
 
-    public Item(Float quantidade, Produto produto) {
+    public Item(Float quantidade, Produto produto, Venda venda) {
         this.quantidade = quantidade;
         this.precoUnitarioProduto = produto.getPreco();
         this.produto = produto;
-        calcularPrecoTotal(quantidade);
+        this.venda = venda;
+        calcularPrecoTotal();
     }
     
-    public void calcularPrecoTotal(float quantidade) {
+    public void calcularPrecoTotal() {
         if (produto.getUnidadeMedida() == UnidadeMedida.GRAMA) {
             BigDecimal precoPorKg = produto.getPreco().divide(new BigDecimal(1000));
-            this.setPreco(precoPorKg.multiply(new BigDecimal(quantidade)));
+            this.setPreco(precoPorKg.multiply(new BigDecimal(this.quantidade)));
         } else if (produto.getUnidadeMedida() == UnidadeMedida.METRO) {
             BigDecimal precoPorMetro = produto.getPreco().divide(new BigDecimal(100));
-            this.setPreco(precoPorMetro.multiply(new BigDecimal(quantidade)));
+            this.setPreco(precoPorMetro.multiply(new BigDecimal(this.quantidade)));
         } else {
-            this.setPreco(produto.getPreco().multiply(new BigDecimal(quantidade)));
+            this.setPreco(produto.getPreco().multiply(new BigDecimal(this.quantidade)));
         }
+    }
+
+    public void sumQuantidade(float quantidade) {
+        this.quantidade += quantidade;
+    }
+
+    public void subtractQuantidade(float quantidade) {
+        this.quantidade -= quantidade;
     }
     
 }

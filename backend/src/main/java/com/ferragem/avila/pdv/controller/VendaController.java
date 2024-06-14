@@ -1,10 +1,11 @@
 package com.ferragem.avila.pdv.controller;
 
 import java.util.List;
+import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -31,8 +32,8 @@ public class VendaController {
     private VendaService vendaService;
     
     @GetMapping
-    public ResponseEntity<List<Venda>> getAllVendasConcluidas(Pageable pageable) {
-        return ResponseEntity.ok().body(vendaService.getAll(pageable).getContent());
+    public ResponseEntity<Page<Venda>> getAllVendasConcluidas(Pageable pageable) {
+        return ResponseEntity.ok().body(vendaService.getAll(pageable));
     }
 
     @GetMapping("/id/{id}")
@@ -50,20 +51,9 @@ public class VendaController {
         return ResponseEntity.ok().body(vendaService.getProdutosFromVendaAtiva());
     }
     
-    @GetMapping("/status")
-    public ResponseEntity<Boolean> existsVendaAtiva() {
-        boolean response = vendaService.existsVendaAtiva();
-
-        if (!response)
-            return new ResponseEntity<Boolean>(response, HttpStatus.NOT_FOUND);
-
-        return new ResponseEntity<Boolean>(response, HttpStatus.OK);
-    }
-        
-    @PostMapping("/nova-venda")
-    public ResponseEntity<Void> createVenda() {
-        vendaService.save();
-        return ResponseEntity.noContent().build();
+    @GetMapping("/ativa")
+    public ResponseEntity<Optional<Venda>> getVendaAtiva() {
+        return ResponseEntity.ok().body(vendaService.getVendaAtiva());
     }
     
     @PostMapping("/add-item")
@@ -71,28 +61,24 @@ public class VendaController {
         return ResponseEntity.ok().body(vendaService.addItem(item));
     }
 
-    @PostMapping("/add-item/codigo-barras/")
+    @PostMapping("/add-item/codigo-barras")
     public ResponseEntity<Venda> addItemToVenda(@RequestParam String codigoBarras) {
         return ResponseEntity.ok().body(vendaService.addItem(codigoBarras));
     }
 
-    @PostMapping("/add-itens/lista/produtos")
+    @PostMapping("/add-itens/lista")
     public ResponseEntity<Venda> addItemToVenda(@RequestBody List<ItemDTO> itens) {
         return ResponseEntity.ok().body(vendaService.addItem(itens));
     }
-
-    @PostMapping("/update/item/quantidade")
-    public ResponseEntity<Venda> updateItemQuantity(@RequestParam float quantidade, long produtoId) {
-        return ResponseEntity.ok().body(vendaService.updateItemQuantity(quantidade, produtoId));
-    }
     
     @PostMapping("/concluir")
-    public ResponseEntity<Venda> persistVenda(@RequestBody VendaDTO dto) {
-        return ResponseEntity.ok().body(vendaService.persist(dto));
+    public ResponseEntity<Venda> concluirVenda(@RequestBody VendaDTO dto) {
+        vendaService.concluirVenda(dto);
+        return ResponseEntity.ok().build();
     }
 
     @DeleteMapping("/cancelar")
-    public ResponseEntity<Void> deleteVendaFromRedis() {
+    public ResponseEntity<Void> cancelarVenda() {
         vendaService.delete();
         return ResponseEntity.noContent().build();
     }

@@ -79,5 +79,13 @@ public class Produto implements Serializable {
         this.ativo = true;
         this.itens = new ArrayList<Item>();
     }
+
+    public void sumEstoque(float quantidade) {
+        this.estoque += quantidade;
+    }
+
+    public void subtractEstoque(float quantidade) {
+        this.estoque -= quantidade;
+    }
     
 }
