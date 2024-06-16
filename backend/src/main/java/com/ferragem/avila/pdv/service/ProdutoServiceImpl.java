@@ -14,7 +14,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
-import com.ferragem.avila.pdv.dto.ProdutoDTO;
+import com.ferragem.avila.pdv.dto.ProdutoDto;
 import com.ferragem.avila.pdv.exceptions.CodigoBarrasInvalidoException;
 import com.ferragem.avila.pdv.exceptions.ProdutoNaoEncontradoException;
 import com.ferragem.avila.pdv.model.Produto;
@@ -69,7 +69,7 @@ public class ProdutoServiceImpl implements ProdutoService {
     }
     
     @Override
-    public Produto save(ProdutoDTO dto) {
+    public Produto save(ProdutoDto dto) {
         if (!dto.codigoBarrasEAN13().matches("^\\d{13}$"))
             throw new CodigoBarrasInvalidoException();
         
@@ -78,7 +78,7 @@ public class ProdutoServiceImpl implements ProdutoService {
     }
 
     @Override
-    public Produto update(long id, ProdutoDTO dto) {
+    public Produto update(long id, ProdutoDto dto) {
         if (!dto.codigoBarrasEAN13().matches("^\\d{13}$"))
             throw new CodigoBarrasInvalidoException();
         
@@ -110,6 +110,7 @@ public class ProdutoServiceImpl implements ProdutoService {
         }
     }
 
+    @CacheEvict(value = "produtos_ativos", allEntries = true)
     @Override
     public ProdutosFromCsv saveProductsFromCsv(MultipartFile file) throws IOException {
         List<CsvToProduto> csvToProduto = parseCsvFile(file);

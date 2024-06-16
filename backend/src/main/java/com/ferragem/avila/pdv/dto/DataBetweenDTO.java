@@ -4,5 +4,5 @@ import java.time.LocalDate;
 
 import jakarta.validation.constraints.PastOrPresent;
 
-public record DataBetweenDTO(@PastOrPresent LocalDate dataHoraInicio, @PastOrPresent LocalDate dataHoraFim) {
+public record DataBetweenDto(@PastOrPresent LocalDate dataHoraInicio, @PastOrPresent LocalDate dataHoraFim) {
 }

@@ -6,5 +6,5 @@ import com.ferragem.avila.pdv.model.enums.FormaPagamento;
 
 import jakarta.validation.constraints.FutureOrPresent;
 
-public record VendaDTO(@FutureOrPresent LocalDateTime dataHoraConclusao, FormaPagamento formaPagamento) {
+public record VendaDto(@FutureOrPresent LocalDateTime dataHoraConclusao, FormaPagamento formaPagamento) {
 }
