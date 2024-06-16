@@ -7,8 +7,8 @@ import java.util.Optional;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
-import com.ferragem.avila.pdv.dto.ItemDTO;
-import com.ferragem.avila.pdv.dto.VendaDTO;
+import com.ferragem.avila.pdv.dto.ItemDto;
+import com.ferragem.avila.pdv.dto.VendaDto;
 import com.ferragem.avila.pdv.model.Produto;
 import com.ferragem.avila.pdv.model.Venda;
 
@@ -29,11 +29,11 @@ public interface VendaService {
     
     void delete();
 
-    Venda addItem(ItemDTO itemDto);
+    Venda addItem(ItemDto itemDto);
 
     Venda addItem(String codigoBarras);
 
-    Venda addItem(List<ItemDTO> itensDto);
+    Venda addItem(List<ItemDto> itensDto);
 
-    void concluirVenda(VendaDTO dto);
+    void concluirVenda(VendaDto dto);
 }

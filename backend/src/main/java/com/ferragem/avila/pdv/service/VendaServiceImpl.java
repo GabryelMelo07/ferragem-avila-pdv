@@ -11,8 +11,8 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
-import com.ferragem.avila.pdv.dto.ItemDTO;
-import com.ferragem.avila.pdv.dto.VendaDTO;
+import com.ferragem.avila.pdv.dto.ItemDto;
+import com.ferragem.avila.pdv.dto.VendaDto;
 import com.ferragem.avila.pdv.exceptions.CodigoBarrasInvalidoException;
 import com.ferragem.avila.pdv.exceptions.ProdutoSemEstoqueException;
 import com.ferragem.avila.pdv.exceptions.VendaInativaException;
@@ -97,7 +97,7 @@ public class VendaServiceImpl implements VendaService {
     }
 
     @Override
-    public Venda addItem(ItemDTO itemDto) {
+    public Venda addItem(ItemDto itemDto) {
         long produtoId = itemDto.produtoId();
         float itemQtd = itemDto.quantidade();
 
@@ -140,12 +140,12 @@ public class VendaServiceImpl implements VendaService {
         if (!codigoBarras.matches("^\\d{13}$"))
             throw new CodigoBarrasInvalidoException();
 
-        return addItem(new ItemDTO(1.0f, produtoService.getByCodigoBarras(codigoBarras).getId()));
+        return addItem(new ItemDto(1.0f, produtoService.getByCodigoBarras(codigoBarras).getId()));
     }
 
     @Override
-    public Venda addItem(List<ItemDTO> itensDto) {
-        for (ItemDTO itemDTO : itensDto) {
+    public Venda addItem(List<ItemDto> itensDto) {
+        for (ItemDto itemDTO : itensDto) {
             addItem(itemDTO);
         }
 
@@ -153,7 +153,7 @@ public class VendaServiceImpl implements VendaService {
     }
 
     @Override
-    public void concluirVenda(VendaDTO dto) {
+    public void concluirVenda(VendaDto dto) {
         Venda venda = getVendaAtiva().orElseThrow(() -> new VendaInativaException());
         venda.setDataHoraConclusao(dto.dataHoraConclusao());
         venda.setFormaPagamento(dto.formaPagamento());

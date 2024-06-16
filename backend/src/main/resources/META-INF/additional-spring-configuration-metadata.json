@@ -8,5 +8,45 @@
     "name": "api.security.token.secret",
     "type": "java.lang.String",
     "description": "Json Web Token Secret, used to encrypt and decrypt the JWT Tokens on HTTPs Requests."
+  },
+  {
+    "name": "admin.config.username",
+    "type": "java.lang.String",
+    "description": "Username to create the first admin user when the application starts."
+  },
+  {
+    "name": "admin.config.password",
+    "type": "java.lang.String",
+    "description": "Password to create the first admin user when the application starts."
+  },
+  {
+    "name": "admin.config.sobrenome",
+    "type": "java.lang.String",
+    "description": "A surname for admin user"
+  },
+  {
+    "name": "admin.config.nome",
+    "type": "java.lang.String",
+    "description": "A name for admin user"
+  },
+  {
+    "name": "admin.config.email",
+    "type": "java.lang.String",
+    "description": "An email to admin user"
+  },
+  {
+    "name": "api.issuer",
+    "type": "java.lang.String",
+    "description": "The link (URL) of the backend APIs (issuer of token JWT)"
+  },
+  {
+    "name": "jwt.private.key",
+    "type": "java.lang.String",
+    "description": "A description for 'jwt.private.key'"
+  },
+  {
+    "name": "jwt.public.key",
+    "type": "java.lang.String",
+    "description": "A description for 'jwt.public.key'"
   }
 ]}

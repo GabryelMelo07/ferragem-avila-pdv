@@ -7,13 +7,14 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.ferragem.avila.pdv.dto.ItemDTO;
-import com.ferragem.avila.pdv.dto.DataBetweenDTO;
-import com.ferragem.avila.pdv.dto.VendaDTO;
+import com.ferragem.avila.pdv.dto.ItemDto;
+import com.ferragem.avila.pdv.dto.DataBetweenDto;
+import com.ferragem.avila.pdv.dto.VendaDto;
 import com.ferragem.avila.pdv.model.Produto;
 import com.ferragem.avila.pdv.model.Venda;
 import com.ferragem.avila.pdv.service.interfaces.VendaService;
@@ -32,17 +33,20 @@ public class VendaController {
     private VendaService vendaService;
     
     @GetMapping
+    @PreAuthorize("hasAuthority('SCOPE_ADMIN')")
     public ResponseEntity<Page<Venda>> getAllVendasConcluidas(Pageable pageable) {
         return ResponseEntity.ok().body(vendaService.getAll(pageable));
     }
 
     @GetMapping("/id/{id}")
+    @PreAuthorize("hasAuthority('SCOPE_ADMIN')")
     public ResponseEntity<Venda> getVendaById(@PathVariable long id) {
         return ResponseEntity.ok().body(vendaService.getById(id));
     }
 
     @PostMapping("/relatorio/data")
-    public ResponseEntity<List<Venda>> getVendasBetweenDates(Pageable pageable, @RequestBody DataBetweenDTO datas) {
+    @PreAuthorize("hasAuthority('SCOPE_ADMIN')")
+    public ResponseEntity<List<Venda>> getVendasBetweenDates(Pageable pageable, @RequestBody DataBetweenDto datas) {
         return ResponseEntity.ok().body(vendaService.getBetweenDataConclusao(pageable, datas.dataHoraInicio(), datas.dataHoraFim()).getContent());
     }
 
@@ -57,7 +61,7 @@ public class VendaController {
     }
     
     @PostMapping("/add-item")
-    public ResponseEntity<Venda> addItemToVenda(@RequestBody ItemDTO item) {
+    public ResponseEntity<Venda> addItemToVenda(@RequestBody ItemDto item) {
         return ResponseEntity.ok().body(vendaService.addItem(item));
     }
 
@@ -67,12 +71,12 @@ public class VendaController {
     }
 
     @PostMapping("/add-itens/lista")
-    public ResponseEntity<Venda> addItemToVenda(@RequestBody List<ItemDTO> itens) {
+    public ResponseEntity<Venda> addItemToVenda(@RequestBody List<ItemDto> itens) {
         return ResponseEntity.ok().body(vendaService.addItem(itens));
     }
     
     @PostMapping("/concluir")
-    public ResponseEntity<Venda> concluirVenda(@RequestBody VendaDTO dto) {
+    public ResponseEntity<Venda> concluirVenda(@RequestBody VendaDto dto) {
         vendaService.concluirVenda(dto);
         return ResponseEntity.ok().build();
     }

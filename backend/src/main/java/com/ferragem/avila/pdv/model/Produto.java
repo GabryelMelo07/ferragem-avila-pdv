@@ -6,7 +6,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.ferragem.avila.pdv.dto.ProdutoDTO;
+import com.ferragem.avila.pdv.dto.ProdutoDto;
 import com.ferragem.avila.pdv.model.enums.UnidadeMedida;
 
 import jakarta.persistence.Column;
@@ -57,7 +57,7 @@ public class Produto implements Serializable {
     @JsonIgnore
     private List<Item> itens;
 
-    public Produto(ProdutoDTO dto) {
+    public Produto(ProdutoDto dto) {
         this.descricao = dto.descricao();
         this.unidadeMedida = dto.unidadeMedida();
         this.estoque = dto.estoque();

@@ -11,7 +11,7 @@ import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.PositiveOrZero;
 import jakarta.validation.constraints.Size;
 
-public record ProdutoDTO(
+public record ProdutoDto(
                 @Size(max = 70, message = "Campo descrição deve ter no máximo 70 caracteres") @NotBlank @NotEmpty String descricao,
                 UnidadeMedida unidadeMedida,
                 @PositiveOrZero Float estoque, @Positive @Max(value = 999999) BigDecimal precoFornecedor,
