@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -152,6 +153,7 @@ public class VendaServiceImpl implements VendaService {
         return getVendaAtiva().get();
     }
 
+    @CacheEvict(value = "vendas", allEntries = true)
     @Override
     public void concluirVenda(VendaDto dto) {
         Venda venda = getVendaAtiva().orElseThrow(() -> new VendaInativaException());

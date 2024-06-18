@@ -1,6 +1,8 @@
 package com.ferragem.avila.pdv.controller;
 
 import java.io.IOException;
+import java.time.LocalDate;
+import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -26,6 +28,8 @@ import com.ferragem.avila.pdv.service.interfaces.ProdutoService;
 import jakarta.validation.Valid;
 
 import org.springframework.web.bind.annotation.RequestPart;
+import org.springframework.web.bind.annotation.RequestParam;
+
 
 @RestController
 @RequestMapping("/produto")
@@ -56,6 +60,12 @@ public class ProdutoController {
     @GetMapping("/{id}")
     public ResponseEntity<Produto> getById(@PathVariable int id) {
         return ResponseEntity.ok().body(produtoService.getById(id));
+    }
+
+    @GetMapping("/mais-vendidos")
+    @PreAuthorize("hasAuthority('SCOPE_ADMIN')")
+    public ResponseEntity<List<Produto>> getMaisVendidosMes(@RequestParam LocalDate data) {
+        return ResponseEntity.ok(produtoService.getMaisVendidosMes(data));
     }
 
     @PostMapping

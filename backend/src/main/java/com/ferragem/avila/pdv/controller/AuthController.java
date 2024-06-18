@@ -1,9 +1,10 @@
 package com.ferragem.avila.pdv.controller;
 
 import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -60,7 +61,7 @@ public class AuthController {
     @Transactional
     @PostMapping("/register")
     @PreAuthorize("hasAuthority('SCOPE_ADMIN')")
-    public ResponseEntity<Void> newUser(@RequestBody CreateUserDto dto) {
+    public ResponseEntity<Void> register(@RequestBody CreateUserDto dto) {
         var userFromDb = userRepository.findByUsername(dto.username());
 
         if (userFromDb.isPresent())
@@ -119,7 +120,7 @@ public class AuthController {
                 .build();
 
         var jwtValue = jwtEncoder.encode(JwtEncoderParameters.from(claims)).getTokenValue();
-        return ResponseEntity.ok(new LoginResponseDto(jwtValue, Date.from(expires)));
+        return ResponseEntity.ok(new LoginResponseDto(jwtValue, LocalDateTime.ofInstant(expires, ZoneId.systemDefault())));
     }
     
 }

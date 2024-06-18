@@ -4,6 +4,7 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.Reader;
+import java.time.LocalDate;
 import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -61,6 +62,11 @@ public class ProdutoServiceImpl implements ProdutoService {
     public Produto getByCodigoBarras(String codigoBarras) {
         return produtoRepository.findByCodigoBarrasEAN13(codigoBarras);
     }
+
+    @Override
+    public List<Produto> getMaisVendidosMes(LocalDate data) {
+        return produtoRepository.getMaisVendidosMes(data.getMonthValue(), data.getYear());
+    }
     
     @CacheEvict(value = "produtos_ativos", allEntries = true)
     @Override
@@ -92,6 +98,7 @@ public class ProdutoServiceImpl implements ProdutoService {
         return save(p);
     }
 
+    @CacheEvict(value = "produtos_inativos", allEntries = true)
     @Override
     public void delete(long id) {
         Produto p = getById(id);
