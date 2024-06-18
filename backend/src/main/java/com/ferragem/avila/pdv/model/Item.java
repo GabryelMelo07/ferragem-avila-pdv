@@ -1,5 +1,6 @@
 package com.ferragem.avila.pdv.model;
 
+import java.io.Serializable;
 import java.math.BigDecimal;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
@@ -19,7 +20,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @Entity
 @Table(name = "item")
-public class Item {
+public class Item implements Serializable {
     
     @Id
     @GeneratedValue

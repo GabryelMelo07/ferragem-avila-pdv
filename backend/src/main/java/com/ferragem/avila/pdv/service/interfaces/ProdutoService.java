@@ -1,6 +1,8 @@
 package com.ferragem.avila.pdv.service.interfaces;
 
 import java.io.IOException;
+import java.time.LocalDate;
+import java.util.List;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -20,6 +22,8 @@ public interface ProdutoService {
     Produto getById(long id);
 
     Produto getByCodigoBarras(String codigoBarras);
+
+    List<Produto> getMaisVendidosMes(LocalDate data);
     
     Produto save(ProdutoDto dto);
     
