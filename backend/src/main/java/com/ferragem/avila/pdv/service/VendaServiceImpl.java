@@ -146,6 +146,29 @@ public class VendaServiceImpl implements VendaService {
     }
 
     @Override
+    public Venda editItem(long itemId, float quantidade) {
+        Venda venda = getVendaAtiva().orElseThrow(() -> new VendaInativaException());
+        Item item = itemService.getById(itemId); // QTD 5
+        Produto produto = item.getProduto(); // ESTOQUE 0
+
+        float estoqueAtual = produto.getEstoque() + item.getQuantidade();
+        float novoEstoque = estoqueAtual - quantidade;
+
+        if (novoEstoque < 0)
+            throw new ProdutoSemEstoqueException();
+
+        produto.setEstoque(novoEstoque);
+        item.setQuantidade(quantidade);
+
+        item.calcularPrecoTotal();
+        venda.calcularPrecoTotal();
+
+        produtoService.save(produto);
+        itemService.save(item);
+        return save(venda);
+    }
+
+    @Override
     public Venda removeItem(long itemId) {
         Venda venda = getVendaAtiva().orElseThrow(() -> new VendaInativaException());
         Item item = itemService.getById(itemId);

@@ -35,6 +35,8 @@ public interface VendaService {
 
     Venda addItem(List<ItemDto> itensDto);
 
+    Venda editItem(long itemId, float quantidade);
+
     Venda removeItem(long itemId);
 
     void concluirVenda(VendaDto dto);
