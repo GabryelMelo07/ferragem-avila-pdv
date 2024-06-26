@@ -75,6 +75,11 @@ public class VendaController {
         return ResponseEntity.ok(vendaService.addItem(itens));
     }
 
+    @PostMapping("/edit-item/{itemId}")
+    public ResponseEntity<Venda> editItem(@RequestParam long itemId, @RequestParam float quantidade) {
+        return ResponseEntity.ok(vendaService.editItem(itemId, quantidade));
+    }
+
     @DeleteMapping("/remover-item/{itemId}")
     public ResponseEntity<Venda> removeItem(@RequestParam long itemId) {
         return ResponseEntity.ok(vendaService.removeItem(itemId));

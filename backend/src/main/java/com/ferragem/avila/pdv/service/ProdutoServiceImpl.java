@@ -51,13 +51,11 @@ public class ProdutoServiceImpl implements ProdutoService {
         return produtoRepository.findByDescricaoContainingIgnoreCaseAndAtivoTrue(pageable, descricao);
     }
     
-    @Cacheable(value = "produto_by_id", key = "#id")
     @Override
     public Produto getById(long id) {
         return produtoRepository.findByIdAndAtivoTrue(id).orElseThrow(() -> new ProdutoNaoEncontradoException("Produto não existe."));
     }
     
-    @Cacheable(value = "produto_by_codbarras", key = "#codigoBarras")
     @Override
     public Produto getByCodigoBarras(String codigoBarras) {
         return produtoRepository.findByCodigoBarrasEAN13(codigoBarras);
@@ -83,6 +81,7 @@ public class ProdutoServiceImpl implements ProdutoService {
         return save(p);
     }
 
+    @CacheEvict(value = "produtos_ativos", allEntries = true)
     @Override
     public Produto update(long id, ProdutoDto dto) {
         if (!dto.codigoBarrasEAN13().matches("^\\d{13}$"))
