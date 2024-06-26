@@ -65,6 +65,8 @@ public class Venda implements Serializable {
             for (Item item : this.itens) {
                this.precoTotal = this.precoTotal.add(item.getPreco());
             }
+        } else {
+            this.precoTotal = BigDecimal.ZERO;
         }
     }
 

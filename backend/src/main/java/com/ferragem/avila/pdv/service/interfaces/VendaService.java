@@ -9,7 +9,7 @@ import org.springframework.data.domain.Pageable;
 
 import com.ferragem.avila.pdv.dto.ItemDto;
 import com.ferragem.avila.pdv.dto.VendaDto;
-import com.ferragem.avila.pdv.model.Produto;
+import com.ferragem.avila.pdv.model.Item;
 import com.ferragem.avila.pdv.model.Venda;
 
 public interface VendaService {
@@ -19,7 +19,7 @@ public interface VendaService {
 
     Page<Venda> getBetweenDataConclusao(Pageable pageable, LocalDate dataInicio, LocalDate dataFim);
 
-    List<Produto> getProdutosFromVendaAtiva();
+    List<Item> getItensFromVendaAtiva();
 
     Venda save();
 
@@ -34,6 +34,8 @@ public interface VendaService {
     Venda addItem(String codigoBarras);
 
     Venda addItem(List<ItemDto> itensDto);
+
+    Venda removeItem(long itemId);
 
     void concluirVenda(VendaDto dto);
 }

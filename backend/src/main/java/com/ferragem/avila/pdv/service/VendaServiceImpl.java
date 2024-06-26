@@ -1,7 +1,6 @@
 package com.ferragem.avila.pdv.service;
 
 import java.time.LocalDate;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
@@ -45,7 +44,6 @@ public class VendaServiceImpl implements VendaService {
         return vendaRepository.findAll(pageable);
     }
 
-    @Cacheable(value = "venda_by_id", key = "#id")
     @Override
     public Venda getById(long id) {
         return vendaRepository.findById(id).orElseThrow(() -> new EntityNotFoundException("Venda não existe."));
@@ -58,15 +56,9 @@ public class VendaServiceImpl implements VendaService {
     }
 
     @Override
-    public List<Produto> getProdutosFromVendaAtiva() {
+    public List<Item> getItensFromVendaAtiva() {
         Venda venda = getVendaAtiva().orElseThrow(() -> new VendaInativaException());
-        List<Produto> produtos = new ArrayList<>();
-
-        for (Item item : venda.getItens()) {
-            produtos.add(item.getProduto());
-        }
-
-        return produtos;
+        return venda.getItens();
     }
 
     @Override
@@ -153,7 +145,22 @@ public class VendaServiceImpl implements VendaService {
         return getVendaAtiva().get();
     }
 
-    @CacheEvict(value = "vendas", allEntries = true)
+    @Override
+    public Venda removeItem(long itemId) {
+        Venda venda = getVendaAtiva().orElseThrow(() -> new VendaInativaException());
+        Item item = itemService.getById(itemId);
+        Produto produto = item.getProduto();
+
+        venda.getItens().remove(item);
+        produto.setEstoque(produto.getEstoque() + item.getQuantidade());
+
+        produtoService.save(produto);
+        itemService.delete(item);
+        venda.calcularPrecoTotal();
+        return save(venda);
+    }
+
+    @CacheEvict(value = { "vendas", "vendas_between_datas" }, allEntries = true)
     @Override
     public void concluirVenda(VendaDto dto) {
         Venda venda = getVendaAtiva().orElseThrow(() -> new VendaInativaException());

@@ -15,7 +15,7 @@ import org.springframework.web.bind.annotation.RestController;
 import com.ferragem.avila.pdv.dto.ItemDto;
 import com.ferragem.avila.pdv.dto.DataBetweenDto;
 import com.ferragem.avila.pdv.dto.VendaDto;
-import com.ferragem.avila.pdv.model.Produto;
+import com.ferragem.avila.pdv.model.Item;
 import com.ferragem.avila.pdv.model.Venda;
 import com.ferragem.avila.pdv.service.interfaces.VendaService;
 
@@ -34,55 +34,60 @@ public class VendaController {
     
     @GetMapping
     @PreAuthorize("hasAuthority('SCOPE_ADMIN')")
-    public ResponseEntity<Page<Venda>> getAllVendasConcluidas(Pageable pageable) {
-        return ResponseEntity.ok().body(vendaService.getAll(pageable));
+    public ResponseEntity<Page<Venda>> getAllConcluidas(Pageable pageable) {
+        return ResponseEntity.ok(vendaService.getAll(pageable));
     }
 
     @GetMapping("/id/{id}")
     @PreAuthorize("hasAuthority('SCOPE_ADMIN')")
-    public ResponseEntity<Venda> getVendaById(@PathVariable long id) {
-        return ResponseEntity.ok().body(vendaService.getById(id));
+    public ResponseEntity<Venda> getById(@PathVariable long id) {
+        return ResponseEntity.ok(vendaService.getById(id));
     }
 
     @PostMapping("/relatorio/data")
     @PreAuthorize("hasAuthority('SCOPE_ADMIN')")
-    public ResponseEntity<List<Venda>> getVendasBetweenDates(Pageable pageable, @RequestBody DataBetweenDto datas) {
-        return ResponseEntity.ok().body(vendaService.getBetweenDataConclusao(pageable, datas.dataHoraInicio(), datas.dataHoraFim()).getContent());
+    public ResponseEntity<Page<Venda>> getBetweenDates(Pageable pageable, @RequestBody DataBetweenDto datas) {
+        return ResponseEntity.ok(vendaService.getBetweenDataConclusao(pageable, datas.dataHoraInicio(), datas.dataHoraFim()));
     }
 
-    @GetMapping("/ativa/produtos")
-    public ResponseEntity<List<Produto>> getProdutosFromVendaAtiva() {
-        return ResponseEntity.ok().body(vendaService.getProdutosFromVendaAtiva());
+    @GetMapping("/ativa/itens")
+    public ResponseEntity<List<Item>> getItens() {
+        return ResponseEntity.ok(vendaService.getItensFromVendaAtiva());
     }
     
     @GetMapping("/ativa")
     public ResponseEntity<Optional<Venda>> getVendaAtiva() {
-        return ResponseEntity.ok().body(vendaService.getVendaAtiva());
+        return ResponseEntity.ok(vendaService.getVendaAtiva());
     }
     
     @PostMapping("/add-item")
-    public ResponseEntity<Venda> addItemToVenda(@RequestBody ItemDto item) {
-        return ResponseEntity.ok().body(vendaService.addItem(item));
+    public ResponseEntity<Venda> addItem(@RequestBody ItemDto item) {
+        return ResponseEntity.ok(vendaService.addItem(item));
     }
 
     @PostMapping("/add-item/codigo-barras")
-    public ResponseEntity<Venda> addItemToVenda(@RequestParam String codigoBarras) {
-        return ResponseEntity.ok().body(vendaService.addItem(codigoBarras));
+    public ResponseEntity<Venda> addItem(@RequestParam String codigoBarras) {
+        return ResponseEntity.ok(vendaService.addItem(codigoBarras));
     }
 
     @PostMapping("/add-itens/lista")
-    public ResponseEntity<Venda> addItemToVenda(@RequestBody List<ItemDto> itens) {
-        return ResponseEntity.ok().body(vendaService.addItem(itens));
+    public ResponseEntity<Venda> addItem(@RequestBody List<ItemDto> itens) {
+        return ResponseEntity.ok(vendaService.addItem(itens));
+    }
+
+    @DeleteMapping("/remover-item/{itemId}")
+    public ResponseEntity<Venda> removeItem(@RequestParam long itemId) {
+        return ResponseEntity.ok(vendaService.removeItem(itemId));
     }
     
     @PostMapping("/concluir")
-    public ResponseEntity<Venda> concluirVenda(@RequestBody VendaDto dto) {
+    public ResponseEntity<Venda> concluir(@RequestBody VendaDto dto) {
         vendaService.concluirVenda(dto);
         return ResponseEntity.ok().build();
     }
 
     @DeleteMapping("/cancelar")
-    public ResponseEntity<Void> cancelarVenda() {
+    public ResponseEntity<Void> cancelar() {
         vendaService.delete();
         return ResponseEntity.noContent().build();
     }
