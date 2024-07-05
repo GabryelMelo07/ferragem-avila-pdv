@@ -1,9 +1,15 @@
 package com.ferragem.avila.pdv.config;
 
+import com.ferragem.avila.pdv.validator.ExpiresAtValidator;
+import com.ferragem.avila.pdv.validator.IssuedAtValidator;
+import com.ferragem.avila.pdv.validator.ScopeValidator;
+import com.ferragem.avila.pdv.validator.SubjectValidator;
 import com.nimbusds.jose.jwk.JWK;
 import com.nimbusds.jose.jwk.JWKSet;
 import com.nimbusds.jose.jwk.RSAKey;
 import com.nimbusds.jose.jwk.source.ImmutableJWKSet;
+
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -14,8 +20,12 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.oauth2.core.DelegatingOAuth2TokenValidator;
+import org.springframework.security.oauth2.core.OAuth2TokenValidator;
+import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.security.oauth2.jwt.JwtEncoder;
+import org.springframework.security.oauth2.jwt.JwtValidators;
 import org.springframework.security.oauth2.jwt.NimbusJwtDecoder;
 import org.springframework.security.oauth2.jwt.NimbusJwtEncoder;
 import org.springframework.security.web.SecurityFilterChain;
@@ -34,6 +44,15 @@ public class SecurityConfig {
     @Value("${jwt.private.key}")
     private RSAPrivateKey privateKey;
 
+    @Value("${api.issuer}")
+    private String issuer;
+
+    @Autowired
+    private SubjectValidator subjectValidator;
+
+    @Autowired
+    private ScopeValidator scopeValidator;
+
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
 
@@ -50,7 +69,25 @@ public class SecurityConfig {
 
     @Bean
     public JwtDecoder jwtDecoder() {
-        return NimbusJwtDecoder.withPublicKey(publicKey).build();
+        NimbusJwtDecoder jwtDecoder = NimbusJwtDecoder.withPublicKey(publicKey).build();
+
+        // Default Validators
+        OAuth2TokenValidator<Jwt> withIssuer = JwtValidators.createDefaultWithIssuer(issuer);
+        OAuth2TokenValidator<Jwt> withDefaultValidators = JwtValidators.createDefault();
+
+        // Custom Validators
+        OAuth2TokenValidator<Jwt> withIssuedAtValidator = new IssuedAtValidator();
+        OAuth2TokenValidator<Jwt> withExpiresAtValidator = new ExpiresAtValidator();
+        OAuth2TokenValidator<Jwt> withScopeValidator = scopeValidator;
+        OAuth2TokenValidator<Jwt> withSubjectValidator = subjectValidator;
+
+        OAuth2TokenValidator<Jwt> combinedValidators = new DelegatingOAuth2TokenValidator<>(withIssuer,
+                withDefaultValidators, withIssuedAtValidator, withExpiresAtValidator, withScopeValidator,
+                withSubjectValidator);
+        
+        jwtDecoder.setJwtValidator(combinedValidators);
+        
+        return jwtDecoder;
     }
 
     @Bean
