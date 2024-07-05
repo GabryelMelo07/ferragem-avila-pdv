@@ -15,8 +15,8 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.JoinTable;
 import jakarta.persistence.ManyToMany;
+import jakarta.persistence.OneToOne;
 import jakarta.persistence.Table;
-import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -26,7 +26,6 @@ import lombok.Setter;
 @Getter
 @Setter
 @NoArgsConstructor
-@AllArgsConstructor
 public class User {
     
     @Id
@@ -48,6 +47,10 @@ public class User {
     @Column(nullable = false, length = 50)
     private String sobrenome;
 
+    @OneToOne(cascade = CascadeType.ALL, orphanRemoval = true)
+    @JoinColumn(name = "reset_password_token_id")
+    private ResetPasswordToken resetPasswordToken;
+
     @ManyToMany(cascade = CascadeType.ALL, fetch = FetchType.EAGER)
     @JoinTable(
             name = "users_roles",
@@ -56,7 +59,17 @@ public class User {
     )
     private Set<Role> roles;
 
+    public User(String username, String password, String email, String nome, String sobrenome, Set<Role> roles) {
+        this.username = username;
+        this.password = password;
+        this.email = email;
+        this.nome = nome;
+        this.sobrenome = sobrenome;
+        this.roles = roles;
+    }
+
     public boolean isPasswordCorrect(String password, PasswordEncoder passwordEncoder) {
         return passwordEncoder.matches(password, this.password);
     }
+    
 }
