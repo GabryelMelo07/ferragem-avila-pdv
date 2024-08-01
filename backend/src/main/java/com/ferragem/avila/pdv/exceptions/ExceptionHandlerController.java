@@ -6,6 +6,7 @@ import java.time.ZoneOffset;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.authorization.AuthorizationDeniedException;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExceptionHandler;
@@ -37,6 +38,12 @@ public class ExceptionHandlerController extends ResponseEntityExceptionHandler {
     private ResponseEntity<RestErrorMessage> produtoNotFoundHandler(VendaInativaException exception) {
         RestErrorMessage response = new RestErrorMessage(LocalDateTime.now().atOffset(ZoneOffset.ofHours(-3)).toLocalDateTime(), HttpStatus.BAD_REQUEST, exception.getMessage());
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
+    }
+
+    @ExceptionHandler(AuthorizationDeniedException.class)
+    private ResponseEntity<RestErrorMessage> authorizationDeniedHandler(AuthorizationDeniedException exception) {
+        RestErrorMessage response = new RestErrorMessage(LocalDateTime.now().atOffset(ZoneOffset.ofHours(-3)).toLocalDateTime(), HttpStatus.UNAUTHORIZED, exception.getMessage());
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(response);
     }
 
     @ExceptionHandler(Exception.class)

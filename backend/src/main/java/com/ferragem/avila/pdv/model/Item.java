@@ -29,10 +29,10 @@ public class Item implements Serializable {
     @Column(nullable = false)
     private Float quantidade;
 
-    @Column(nullable = false, precision = 8, scale = 2)
+    @Column(nullable = false)
     private BigDecimal preco;
 
-    @Column(nullable = false, precision = 8, scale = 2)
+    @Column(nullable = false)
     private BigDecimal precoUnitarioProduto;
 
     @ManyToOne

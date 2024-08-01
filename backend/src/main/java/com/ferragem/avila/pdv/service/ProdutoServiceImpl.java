@@ -8,13 +8,18 @@ import java.time.LocalDate;
 import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.ferragem.avila.pdv.dto.ProdutoDto;
 import com.ferragem.avila.pdv.exceptions.CodigoBarrasInvalidoException;
 import com.ferragem.avila.pdv.exceptions.ProdutoNaoEncontradoException;
@@ -32,6 +37,43 @@ public class ProdutoServiceImpl implements ProdutoService {
 
     @Autowired
     private ProdutoRepository produtoRepository;
+
+    @Autowired
+    private RedisTemplate<String, Object> redisTemplate;
+
+    @Autowired
+    private ObjectMapper objectMapper;
+
+    @Value("${xlsx.file.limit}")
+    private Integer xlsxFileLimit;
+    
+    // Tópicos do sistema de Pub/Sub do Redis, para enviar as mensagens.
+    private final String RELATORIO_GERAL_PRODUTOS_CHANNEL = "pdv:relatorio-produtos";
+    // private final String RESULTADO_UPLOAD_CSV_CHANNEL = "pdv:resultado-upload-csv";
+    
+    /**
+     * Este método é responsável por carregar todos os registros da tabela produtos
+     * do banco de dados, inseri-los no Redis e avisar o front-end do término do processo
+     * via sistema de Pub/Sub do próprio Redis.
+     * 
+     * Ele roda de forma assíncrona em uma thread separada.
+     * 
+     * @throws JsonProcessingException
+     */
+    @Async
+    @Override
+    public void gerarRelatorioGeral(String relatorioKey) throws JsonProcessingException {
+        List<Produto> produtos = produtoRepository.findByAtivoTrue();
+
+        if (produtos.size() > xlsxFileLimit)
+            throw new RuntimeException("Arquivos de formato .xlsx suportam somente " + xlsxFileLimit + " linhas."); //Personalizar esta exception.
+
+        if (produtos != null && !produtos.isEmpty()) {
+            String produtosToJson = objectMapper.writeValueAsString(produtos);
+            redisTemplate.opsForValue().set(relatorioKey, produtosToJson);
+            redisTemplate.convertAndSend(RELATORIO_GERAL_PRODUTOS_CHANNEL, "Relatório de produtos Carregado com sucesso!");
+        }
+    }
     
     @Cacheable(value = "produtos_ativos", key = "'pagina_' + #pageable.pageNumber")
     @Override
@@ -66,6 +108,11 @@ public class ProdutoServiceImpl implements ProdutoService {
         return produtoRepository.getMaisVendidosMes(data.getMonthValue(), data.getYear());
     }
     
+    @Override
+    public Page<Produto> getProdutosBaixoEstoque(Pageable pageable) {
+        return produtoRepository.findProdutosComEstoqueBaixo(pageable);
+    }
+    
     @CacheEvict(value = "produtos_ativos", allEntries = true)
     @Override
     public Produto save(Produto produto) {
@@ -97,7 +144,7 @@ public class ProdutoServiceImpl implements ProdutoService {
         return save(p);
     }
 
-    @CacheEvict(value = "produtos_inativos", allEntries = true)
+    @CacheEvict(value = {"produtos_ativos", "produtos_inativos"}, allEntries = true)
     @Override
     public void delete(long id) {
         Produto p = getById(id);

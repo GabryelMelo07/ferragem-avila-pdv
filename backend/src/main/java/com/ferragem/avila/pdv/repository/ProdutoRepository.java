@@ -1,5 +1,6 @@
 package com.ferragem.avila.pdv.repository;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
@@ -14,6 +15,8 @@ public interface ProdutoRepository extends PagingAndSortingRepository<Produto, L
     Produto save(Produto produto);
     
     Optional<Produto> findByIdAndAtivoTrue(Long id);
+    
+    ArrayList<Produto> findByAtivoTrue();
     
     Page<Produto> findByAtivoTrue(Pageable pageable);
 
@@ -34,4 +37,7 @@ public interface ProdutoRepository extends PagingAndSortingRepository<Produto, L
             LIMIT 5
         """)
     List<Produto> getMaisVendidosMes(int mes, int ano);
+
+    @Query("SELECT p FROM Produto p WHERE p.estoque <= 10")
+    Page<Produto> findProdutosComEstoqueBaixo(Pageable pageable);
 }
