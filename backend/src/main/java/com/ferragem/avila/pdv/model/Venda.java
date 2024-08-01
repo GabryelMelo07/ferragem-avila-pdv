@@ -41,7 +41,7 @@ public class Venda implements Serializable {
     @Column(nullable = false)
     private boolean concluida;
 
-    @Column(nullable = false, precision = 6, scale = 2)
+    @Column(nullable = false)
     private BigDecimal precoTotal;
 
     @Column

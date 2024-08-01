@@ -8,11 +8,14 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.web.multipart.MultipartFile;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.ferragem.avila.pdv.dto.ProdutoDto;
 import com.ferragem.avila.pdv.model.Produto;
 import com.ferragem.avila.pdv.model.utils.ProdutosFromCsv;
 
 public interface ProdutoService {
+    void gerarRelatorioGeral(String redisRelatorioProdutosKey) throws JsonProcessingException;
+    
     Page<Produto> getAll(Pageable pageable);
     
     Page<Produto> getAllInativos(Pageable pageable);
@@ -24,6 +27,8 @@ public interface ProdutoService {
     Produto getByCodigoBarras(String codigoBarras);
 
     List<Produto> getMaisVendidosMes(LocalDate data);
+
+    Page<Produto> getProdutosBaixoEstoque(Pageable pageable);
     
     Produto save(ProdutoDto dto);
     

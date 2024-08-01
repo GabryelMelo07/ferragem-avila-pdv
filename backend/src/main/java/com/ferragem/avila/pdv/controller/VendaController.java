@@ -19,6 +19,9 @@ import com.ferragem.avila.pdv.model.Item;
 import com.ferragem.avila.pdv.model.Venda;
 import com.ferragem.avila.pdv.service.interfaces.VendaService;
 
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.PositiveOrZero;
+
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -46,7 +49,7 @@ public class VendaController {
 
     @PostMapping("/relatorio/data")
     @PreAuthorize("hasAuthority('SCOPE_ADMIN')")
-    public ResponseEntity<Page<Venda>> getBetweenDates(Pageable pageable, @RequestBody DataBetweenDto datas) {
+    public ResponseEntity<Page<Venda>> getBetweenDates(Pageable pageable, @RequestBody @Valid DataBetweenDto datas) {
         return ResponseEntity.ok(vendaService.getBetweenDataConclusao(pageable, datas.dataHoraInicio(), datas.dataHoraFim()));
     }
 
@@ -61,7 +64,7 @@ public class VendaController {
     }
     
     @PostMapping("/add-item")
-    public ResponseEntity<Venda> addItem(@RequestBody ItemDto item) {
+    public ResponseEntity<Venda> addItem(@RequestBody @Valid ItemDto item) {
         return ResponseEntity.ok(vendaService.addItem(item));
     }
 
@@ -71,12 +74,12 @@ public class VendaController {
     }
 
     @PostMapping("/add-itens/lista")
-    public ResponseEntity<Venda> addItem(@RequestBody List<ItemDto> itens) {
+    public ResponseEntity<Venda> addItem(@RequestBody @Valid List<ItemDto> itens) {
         return ResponseEntity.ok(vendaService.addItem(itens));
     }
 
     @PostMapping("/edit-item/{itemId}")
-    public ResponseEntity<Venda> editItem(@RequestParam long itemId, @RequestParam float quantidade) {
+    public ResponseEntity<Venda> editItem(@RequestParam long itemId, @RequestParam @PositiveOrZero float quantidade) {
         return ResponseEntity.ok(vendaService.editItem(itemId, quantidade));
     }
 
@@ -86,7 +89,7 @@ public class VendaController {
     }
     
     @PostMapping("/concluir")
-    public ResponseEntity<Venda> concluir(@RequestBody VendaDto dto) {
+    public ResponseEntity<Venda> concluir(@RequestBody @Valid VendaDto dto) {
         vendaService.concluirVenda(dto);
         return ResponseEntity.ok().build();
     }
