@@ -1,9 +1,9 @@
 package com.ferragem.avila.pdv.controller;
 
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.List;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.redis.core.RedisTemplate;
@@ -20,27 +20,28 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.ferragem.avila.pdv.model.Produto;
 import com.ferragem.avila.pdv.service.interfaces.ProdutoService;
 
+import lombok.extern.slf4j.Slf4j;
+
 import org.springframework.web.bind.annotation.GetMapping;
 
 @RestController
 @RequestMapping("/dashboard")
 @PreAuthorize("hasAuthority('SCOPE_ADMIN')")
+@Slf4j
 public class DashboardController {
 
-    @Autowired
-    private ProdutoService produtoService;
-
-    // @Autowired
-    // private VendaService vendaService;
-
-    @Autowired
-    private RedisTemplate<String, Object> redisTemplate;
-
-    @Autowired
-    private ObjectMapper objectMapper;
+    private final ProdutoService produtoService;
+    private final RedisTemplate<String, Object> redisTemplate;
+    private final ObjectMapper objectMapper;
 
     // Chave para inserir e buscar o resultado do processamento assíncrono do upload de produtos via CSV.
     private final String RELATORIO_PRODUTOS_KEY = "produtos_ativos::relatorio";
+
+    DashboardController(ProdutoService produtoService, RedisTemplate<String, Object> redisTemplate, ObjectMapper objectMapper) {
+        this.produtoService = produtoService;
+        this.redisTemplate = redisTemplate;
+        this.objectMapper = objectMapper;
+    }
 
     /**
      * Este endpoint irá verificar se existe a chave "produtos_ativos::relatorio" no Redis.
@@ -63,10 +64,21 @@ public class DashboardController {
      * @throws JsonProcessingException
      */
     @GetMapping("/produtos/relatorio-geral")
-    public ResponseEntity<List<Produto>> getRelatorioProdutos() throws JsonMappingException, JsonProcessingException {
+    public ResponseEntity<List<Produto>> getRelatorioProdutos() {
         if (redisTemplate.hasKey(RELATORIO_PRODUTOS_KEY)) {
             String redisValue = (String) redisTemplate.opsForValue().get(RELATORIO_PRODUTOS_KEY);
-            List<Produto> relatorioGeral = objectMapper.readValue(redisValue, new TypeReference<List<Produto>>() {});
+            List<Produto> relatorioGeral = new ArrayList<>();
+
+            try {
+                relatorioGeral = objectMapper.readValue(redisValue, new TypeReference<List<Produto>>() {});
+            } catch (JsonMappingException e) {
+                log.error("Erro ao mapear o objeto do Redis (String) para o tipo 'List<Produto>': ", e);
+                e.printStackTrace();
+            } catch (JsonProcessingException e) {
+                log.error("Erro ao processar o objeto JSON gerado: ", e);
+                e.printStackTrace();
+            }
+            
             return ResponseEntity.ok(relatorioGeral);
         }
         

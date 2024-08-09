@@ -1,4 +1,6 @@
 package com.ferragem.avila.pdv.dto;
 
-public record LoginRequestDto(String username, String password) {
+import com.ferragem.avila.pdv.annotation.ValidString;
+
+public record LoginRequestDto(@ValidString String username, @ValidString String password) {
 }

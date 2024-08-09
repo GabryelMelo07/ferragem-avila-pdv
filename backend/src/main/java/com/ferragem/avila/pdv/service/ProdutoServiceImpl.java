@@ -10,7 +10,6 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 import org.hibernate.exception.ConstraintViolationException;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
@@ -36,17 +35,15 @@ import com.ferragem.avila.pdv.service.interfaces.ProdutoService;
 import com.opencsv.bean.CsvToBean;
 import com.opencsv.bean.CsvToBeanBuilder;
 
+import lombok.extern.slf4j.Slf4j;
+
 @Service
+@Slf4j
 public class ProdutoServiceImpl implements ProdutoService {
 
-    @Autowired
-    private ProdutoRepository produtoRepository;
-
-    @Autowired
-    private RedisTemplate<String, Object> redisTemplate;
-
-    @Autowired
-    private ObjectMapper objectMapper;
+    private final ProdutoRepository produtoRepository;
+    private final RedisTemplate<String, Object> redisTemplate;
+    private final ObjectMapper objectMapper;
 
     @Value("${xlsx.file.limit}")
     private Integer xlsxFileLimit;
@@ -57,6 +54,13 @@ public class ProdutoServiceImpl implements ProdutoService {
     // Tópicos do sistema de Pub/Sub do Redis, para publicar mensagens que serão consumidas no frontend.
     private final String RELATORIO_GERAL_PRODUTOS_CHANNEL = "pdv:relatorio-produtos";
     private final String RESULTADO_UPLOAD_CSV_CHANNEL = "pdv:resultado-upload-csv";
+
+    public ProdutoServiceImpl(ProdutoRepository produtoRepository, RedisTemplate<String, Object> redisTemplate,
+            ObjectMapper objectMapper) {
+        this.produtoRepository = produtoRepository;
+        this.redisTemplate = redisTemplate;
+        this.objectMapper = objectMapper;
+    }
 
     /**
      * Este método é responsável por carregar todos os registros da tabela produtos
@@ -70,33 +74,41 @@ public class ProdutoServiceImpl implements ProdutoService {
      */
     @Async
     @Override
-    public void gerarRelatorioGeral(String relatorioKey) throws JsonProcessingException {
+    public void gerarRelatorioGeral(String relatorioKey) {
         List<Produto> produtos = produtoRepository.findByAtivoTrue();
 
         if (produtos.size() > xlsxFileLimit)
             throw new RuntimeException("Arquivos de formato .xlsx suportam somente " + xlsxFileLimit + " linhas."); // Personalizar esta exception
 
         if (produtos != null && !produtos.isEmpty()) {
-            String produtosToJson = objectMapper.writeValueAsString(produtos);
+            String produtosToJson = "";
+
+            try {
+                produtosToJson = objectMapper.writeValueAsString(produtos);
+            } catch (JsonProcessingException e) {
+                log.error("Erro ao converter Objeto para String JSON: ", e);
+                e.printStackTrace();
+            }
+
             redisTemplate.opsForValue().set(relatorioKey, produtosToJson);
             redisTemplate.convertAndSend(RELATORIO_GERAL_PRODUTOS_CHANNEL, "Relatório de produtos Carregado com sucesso!");
         }
     }
 
-    @Cacheable(value = "produtos_ativos", key = "'pagina_' + #pageable.pageNumber")
     @Override
+    @Cacheable(value = "produtos_ativos", key = "'pagina_' + #pageable.pageNumber", unless = "#result == null or #result.isEmpty()")
     public Page<Produto> getAll(Pageable pageable) {
         return produtoRepository.findByAtivoTrue(pageable);
     }
 
-    @Cacheable(value = "produtos_inativos", key = "'pagina_' + #pageable.pageNumber")
     @Override
+    @Cacheable(value = "produtos_inativos", key = "'pagina_' + #pageable.pageNumber", unless = "#result == null or #result.isEmpty()")
     public Page<Produto> getAllInativos(Pageable pageable) {
         return produtoRepository.findByAtivoFalse(pageable);
     }
 
-    @Cacheable(value = "produto_by_descricao", key = "'pagina_' + #pageable.pageNumber")
     @Override
+    @Cacheable(value = "produto_by_descricao", key = "'pagina_' + #pageable.pageNumber", unless = "#result == null or #result.isEmpty()")
     public Page<Produto> getAllByDescricao(Pageable pageable, String descricao) {
         return produtoRepository.findByDescricaoContainingIgnoreCaseAndAtivoTrue(pageable, descricao);
     }
@@ -122,8 +134,8 @@ public class ProdutoServiceImpl implements ProdutoService {
         return produtoRepository.findProdutosComEstoqueBaixo(pageable);
     }
 
-    @CacheEvict(value = "produtos_ativos", allEntries = true)
     @Override
+    @CacheEvict(value = "produtos_ativos", allEntries = true)
     public Produto save(Produto produto) {
         return produtoRepository.save(produto);
     }
@@ -137,8 +149,8 @@ public class ProdutoServiceImpl implements ProdutoService {
         return save(p);
     }
 
-    @CacheEvict(value = "produtos_ativos", allEntries = true)
     @Override
+    @CacheEvict(value = "produtos_ativos", allEntries = true)
     public Produto update(long id, ProdutoDto dto) {
         if (!dto.codigoBarrasEAN13().matches("^\\d{13}$"))
             throw new CodigoBarrasInvalidoException();
@@ -154,8 +166,8 @@ public class ProdutoServiceImpl implements ProdutoService {
         return save(p);
     }
 
-    @CacheEvict(value = { "produtos_ativos", "produtos_inativos" }, allEntries = true)
     @Override
+    @CacheEvict(value = { "produtos_ativos", "produtos_inativos" }, allEntries = true)
     public void delete(long id) {
         Produto p = getById(id);
         p.setAtivo(false);

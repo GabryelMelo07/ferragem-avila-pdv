@@ -4,7 +4,6 @@ import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Page;
@@ -13,12 +12,14 @@ import org.springframework.stereotype.Service;
 
 import com.ferragem.avila.pdv.dto.ItemDto;
 import com.ferragem.avila.pdv.dto.VendaDto;
+import com.ferragem.avila.pdv.dto.VendedorDto;
 import com.ferragem.avila.pdv.exceptions.CodigoBarrasInvalidoException;
 import com.ferragem.avila.pdv.exceptions.ProdutoSemEstoqueException;
 import com.ferragem.avila.pdv.exceptions.VendaInativaException;
 import com.ferragem.avila.pdv.model.Item;
 import com.ferragem.avila.pdv.model.Produto;
 import com.ferragem.avila.pdv.model.Venda;
+import com.ferragem.avila.pdv.model.enums.VendaExclusaoResultado;
 import com.ferragem.avila.pdv.repository.VendaRepository;
 import com.ferragem.avila.pdv.service.interfaces.ItemService;
 import com.ferragem.avila.pdv.service.interfaces.ProdutoService;
@@ -29,17 +30,18 @@ import jakarta.persistence.EntityNotFoundException;
 @Service
 public class VendaServiceImpl implements VendaService {
 
-    @Autowired
-    private VendaRepository vendaRepository;
+    private final VendaRepository vendaRepository;
+    private final ItemService itemService;
+    private final ProdutoService produtoService;
+    
+    public VendaServiceImpl(VendaRepository vendaRepository, ItemService itemService, ProdutoService produtoService) {
+        this.vendaRepository = vendaRepository;
+        this.itemService = itemService;
+        this.produtoService = produtoService;
+    }
 
-    @Autowired
-    private ItemService itemService;
-
-    @Autowired
-    private ProdutoService produtoService;
-
-    @Cacheable(value = "vendas", key = "'page_' + #pageable.pageNumber")
     @Override
+    @Cacheable(value = "vendas", key = "'page_' + #pageable.pageNumber", unless = "#result == null or #result.isEmpty()")
     public Page<Venda> getAll(Pageable pageable) {
         return vendaRepository.findAll(pageable);
     }
@@ -49,8 +51,8 @@ public class VendaServiceImpl implements VendaService {
         return vendaRepository.findById(id).orElseThrow(() -> new EntityNotFoundException("Venda não existe."));
     }
 
-    @Cacheable(value = "vendas_between_datas", key = "'page_' + #pageable.pageNumber")
     @Override
+    @Cacheable(value = "vendas_between_datas", key = "'page_' + #pageable.pageNumber", unless = "#result == null or #result.isEmpty()")
     public Page<Venda> getBetweenDataConclusao(Pageable pageable, LocalDate dataInicio, LocalDate dataFim) {
         return vendaRepository.findByDataHoraConclusaoBetween(pageable, dataInicio, dataFim);
     }
@@ -59,11 +61,6 @@ public class VendaServiceImpl implements VendaService {
     public List<Item> getItensFromVendaAtiva() {
         Venda venda = getVendaAtiva().orElseThrow(() -> new VendaInativaException());
         return venda.getItens();
-    }
-
-    @Override
-    public Venda save() {
-        return vendaRepository.save(new Venda());
     }
 
     @Override
@@ -77,7 +74,7 @@ public class VendaServiceImpl implements VendaService {
     }
 
     @Override
-    public void delete() {
+    public void cancel() {
         Venda venda = getVendaAtiva().orElseThrow(() -> new VendaInativaException());
         List<Item> itens = venda.getItens();
 
@@ -90,17 +87,36 @@ public class VendaServiceImpl implements VendaService {
     }
 
     @Override
-    public Venda addItem(ItemDto itemDto) {
+    public VendaExclusaoResultado delete(Long id) {
+        if (vendaRepository.existsById(id)) {
+            Venda venda = getById(id);
+
+            if (venda.isConcluida()) {
+                vendaRepository.delete(venda);
+                return VendaExclusaoResultado.DELETADA;
+            } else {
+                return VendaExclusaoResultado.NAO_CONCLUIDA;
+            }
+        }
+        
+        return VendaExclusaoResultado.NAO_EXISTE;
+    }
+
+    @Override
+    public Venda addItem(ItemDto itemDto, VendedorDto vendedor) {
         long produtoId = itemDto.produtoId();
         float itemQtd = itemDto.quantidade();
 
         Optional<Venda> opVenda = getVendaAtiva();
-        Venda venda;
+        Venda venda = new Venda();
 
-        if (opVenda.isEmpty())
-            venda = save();
-        else
+        if (opVenda.isEmpty()) {
+            venda.setVendedorId(vendedor.id());
+            venda.setVendedorNome(vendedor.nome());
+            venda = save(venda);
+        } else {
             venda = opVenda.get();
+        }
 
         Produto produto = produtoService.getById(produtoId);
 
@@ -129,17 +145,17 @@ public class VendaServiceImpl implements VendaService {
     }
 
     @Override
-    public Venda addItem(String codigoBarras) {
+    public Venda addItem(String codigoBarras, VendedorDto vendedor) {
         if (!codigoBarras.matches("^\\d{13}$"))
             throw new CodigoBarrasInvalidoException();
 
-        return addItem(new ItemDto(1.0f, produtoService.getByCodigoBarras(codigoBarras).getId()));
+        return addItem(new ItemDto(1.0f, produtoService.getByCodigoBarras(codigoBarras).getId()), vendedor);
     }
 
     @Override
-    public Venda addItem(List<ItemDto> itensDto) {
+    public Venda addItem(List<ItemDto> itensDto, VendedorDto vendedor) {
         for (ItemDto itemDTO : itensDto) {
-            addItem(itemDTO);
+            addItem(itemDTO, vendedor);
         }
 
         return getVendaAtiva().get();
@@ -183,8 +199,8 @@ public class VendaServiceImpl implements VendaService {
         return save(venda);
     }
 
-    @CacheEvict(value = { "vendas", "vendas_between_datas" }, allEntries = true)
     @Override
+    @CacheEvict(value = { "vendas", "vendas_between_datas" }, allEntries = true)
     public void concluirVenda(VendaDto dto) {
         Venda venda = getVendaAtiva().orElseThrow(() -> new VendaInativaException());
         venda.setDataHoraConclusao(dto.dataHoraConclusao());
