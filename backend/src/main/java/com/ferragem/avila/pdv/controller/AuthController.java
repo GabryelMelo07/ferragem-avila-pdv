@@ -129,19 +129,22 @@ public class AuthController {
         if (user.isEmpty() || !user.get().isPasswordCorrect(loginRequest.password(), passwordEncoder))
             throw new BadCredentialsException("Nome de usuário ou senha inválidos.");
 
+        User usuario = user.get();
+            
         var now = Instant.now();
         var expires = now.plus(7, ChronoUnit.DAYS);
 
-        var scopes = user.get().getRoles()
+        var scopes = usuario.getRoles()
                 .stream()
                 .map(Role::getName)
                 .collect(Collectors.joining(" "));
 
         var claims = JwtClaimsSet.builder()
                 .issuer(issuer)
-                .subject(user.get().getId().toString())
+                .subject(usuario.getId().toString())
                 .issuedAt(now)
                 .expiresAt(expires)
+                .claim("nome", "%s %s".formatted(usuario.getNome(), usuario.getSobrenome()))
                 .claim("scope", scopes)
                 .build();
 

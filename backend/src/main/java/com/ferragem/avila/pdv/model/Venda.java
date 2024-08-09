@@ -3,11 +3,14 @@ package com.ferragem.avila.pdv.model;
 import java.io.Serializable;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 
 import com.ferragem.avila.pdv.model.enums.FormaPagamento;
 
+import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -17,8 +20,8 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.OneToMany;
+import jakarta.persistence.OrderBy;
 import jakarta.persistence.Table;
-import jakarta.validation.constraints.FutureOrPresent;
 import lombok.Data;
 
 @Data
@@ -31,11 +34,9 @@ public class Venda implements Serializable {
     private Long id;
 
     @Column(nullable = false)
-    @FutureOrPresent
     private LocalDateTime dataHoraInicio;
 
     @Column
-    @FutureOrPresent
     private LocalDateTime dataHoraConclusao;
     
     @Column(nullable = false)
@@ -47,12 +48,19 @@ public class Venda implements Serializable {
     @Column
     @Enumerated(EnumType.STRING)
     private FormaPagamento formaPagamento;
+
+    @Column(nullable = false)
+    private UUID vendedorId;
+
+    @Column(nullable = false)
+    private String vendedorNome;
     
-    @OneToMany(mappedBy = "venda", fetch = FetchType.EAGER)
+    @OneToMany(mappedBy = "venda", fetch = FetchType.EAGER, cascade = CascadeType.ALL)
+    @OrderBy("id ASC")
     private List<Item> itens;
 
     public Venda() {
-        this.dataHoraInicio = LocalDateTime.now();
+        this.dataHoraInicio = LocalDateTime.now().atOffset(ZoneOffset.ofHours(-3)).toLocalDateTime();
         this.concluida = false;
         this.precoTotal = BigDecimal.ZERO;
         this.itens = new ArrayList<Item>();

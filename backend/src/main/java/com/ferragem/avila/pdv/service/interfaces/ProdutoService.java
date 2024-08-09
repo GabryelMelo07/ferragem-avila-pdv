@@ -8,12 +8,11 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.web.multipart.MultipartFile;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.ferragem.avila.pdv.dto.ProdutoDto;
 import com.ferragem.avila.pdv.model.Produto;
 
 public interface ProdutoService {
-    void gerarRelatorioGeral(String redisRelatorioProdutosKey) throws JsonProcessingException;
+    void gerarRelatorioGeral(String redisRelatorioProdutosKey);
     
     Page<Produto> getAll(Pageable pageable);
     

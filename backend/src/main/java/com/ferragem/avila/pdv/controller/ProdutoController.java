@@ -2,7 +2,6 @@ package com.ferragem.avila.pdv.controller;
 
 import java.io.IOException;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -32,23 +31,27 @@ import com.ferragem.avila.pdv.model.utils.ProdutosFromCsv;
 import com.ferragem.avila.pdv.service.interfaces.ProdutoService;
 
 import jakarta.validation.Valid;
+import lombok.extern.slf4j.Slf4j;
 
 @RestController
 @RequestMapping("/produto")
+@Slf4j
 public class ProdutoController {
     
-    @Autowired
-    private ProdutoService produtoService;
-
-    @Autowired
-    private RedisTemplate<String, Object> redisTemplate;
-
-    @Autowired
-    private ObjectMapper objectMapper;
+    private final ProdutoService produtoService;
+    private final RedisTemplate<String, Object> redisTemplate;
+    private final ObjectMapper objectMapper;
 
     @Value("${import-csv.redis.key}")
     private String importCsvRedisKey;
-    
+
+    public ProdutoController(ProdutoService produtoService, RedisTemplate<String, Object> redisTemplate,
+            ObjectMapper objectMapper) {
+        this.produtoService = produtoService;
+        this.redisTemplate = redisTemplate;
+        this.objectMapper = objectMapper;
+    }
+
     @GetMapping("/ativos")
     public ResponseEntity<Page<Produto>> getAllProdutosAtivos(Pageable pageable) {
         return ResponseEntity.ok().body(produtoService.getAll(pageable));
@@ -83,16 +86,28 @@ public class ProdutoController {
             produtoService.importarProdutosCsv(file);
             return ResponseEntity.ok("Importando produtos do arquivo CSV: " + fileName);
         } catch (IOException e) {
+            log.error("Erro ao processar o arquivo CSV 'IOException': ", e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Erro ao processar o arquivo CSV: " + fileName);
         }
     }
 
     @GetMapping("/importar-csv/resultado")
     @PreAuthorize("hasAuthority('SCOPE_ADMIN')")
-    public ResponseEntity<ProdutosFromCsv> getSaveFromCsvResult() throws JsonMappingException, JsonProcessingException {
+    public ResponseEntity<ProdutosFromCsv> getSaveFromCsvResult() {
         if (redisTemplate.hasKey(importCsvRedisKey)) {
             String redisValue = (String) redisTemplate.opsForValue().get(importCsvRedisKey);
-            ProdutosFromCsv resultado = objectMapper.readValue(redisValue, ProdutosFromCsv.class);
+            ProdutosFromCsv resultado = new ProdutosFromCsv();
+
+            try {
+                resultado = objectMapper.readValue(redisValue, ProdutosFromCsv.class);
+            } catch (JsonMappingException e) {
+                e.printStackTrace();
+                log.error("Erro ao mapear o objeto do Redis (String) para a classe 'ProdutosFromCsv': ", e);
+            } catch (JsonProcessingException e) {
+                e.printStackTrace();
+                log.error("Erro ao mapear o objeto do Redis (String) para a classe 'ProdutosFromCsv': ", e);
+            }
+
             return ResponseEntity.ok(resultado);
         }
         

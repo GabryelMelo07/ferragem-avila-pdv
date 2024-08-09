@@ -9,8 +9,10 @@ import org.springframework.data.domain.Pageable;
 
 import com.ferragem.avila.pdv.dto.ItemDto;
 import com.ferragem.avila.pdv.dto.VendaDto;
+import com.ferragem.avila.pdv.dto.VendedorDto;
 import com.ferragem.avila.pdv.model.Item;
 import com.ferragem.avila.pdv.model.Venda;
+import com.ferragem.avila.pdv.model.enums.VendaExclusaoResultado;
 
 public interface VendaService {
     Page<Venda> getAll(Pageable pageable);
@@ -21,19 +23,19 @@ public interface VendaService {
 
     List<Item> getItensFromVendaAtiva();
 
-    Venda save();
-
     Venda save(Venda venda);
 
     Optional<Venda> getVendaAtiva();
     
-    void delete();
+    void cancel();
 
-    Venda addItem(ItemDto itemDto);
+    VendaExclusaoResultado delete(Long id);
 
-    Venda addItem(String codigoBarras);
+    Venda addItem(ItemDto itemDto, VendedorDto vendedor);
 
-    Venda addItem(List<ItemDto> itensDto);
+    Venda addItem(String codigoBarras, VendedorDto vendedor);
+
+    Venda addItem(List<ItemDto> itensDto, VendedorDto vendedor);
 
     Venda editItem(long itemId, float quantidade);
 

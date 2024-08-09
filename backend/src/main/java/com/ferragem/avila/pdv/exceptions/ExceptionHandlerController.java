@@ -11,6 +11,8 @@ import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExceptionHandler;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonMappingException;
 import com.ferragem.avila.pdv.model.utils.RestErrorMessage;
 
 @ControllerAdvice
@@ -44,6 +46,18 @@ public class ExceptionHandlerController extends ResponseEntityExceptionHandler {
     private ResponseEntity<RestErrorMessage> authorizationDeniedHandler(AuthorizationDeniedException exception) {
         RestErrorMessage response = new RestErrorMessage(LocalDateTime.now().atOffset(ZoneOffset.ofHours(-3)).toLocalDateTime(), HttpStatus.UNAUTHORIZED, exception.getMessage());
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(response);
+    }
+
+    @ExceptionHandler(JsonMappingException.class)
+    private ResponseEntity<RestErrorMessage> jsonMappingExceptionHandler(JsonMappingException exception) {
+        RestErrorMessage response = new RestErrorMessage(LocalDateTime.now().atOffset(ZoneOffset.ofHours(-3)).toLocalDateTime(), HttpStatus.INTERNAL_SERVER_ERROR, exception.getMessage());
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
+    }
+
+    @ExceptionHandler(JsonProcessingException.class)
+    private ResponseEntity<RestErrorMessage> jsonProcessingExceptionHandler(JsonProcessingException exception) {
+        RestErrorMessage response = new RestErrorMessage(LocalDateTime.now().atOffset(ZoneOffset.ofHours(-3)).toLocalDateTime(), HttpStatus.INTERNAL_SERVER_ERROR, exception.getMessage());
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
     }
 
     @ExceptionHandler(Exception.class)
