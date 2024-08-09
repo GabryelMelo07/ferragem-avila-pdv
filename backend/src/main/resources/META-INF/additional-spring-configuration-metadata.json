@@ -1,62 +1,69 @@
-{"properties": [
-  {
-    "name": "use.swagger",
-    "type": "java.lang.String",
-    "description": "This annotation turns swagger enabled in dev mode and the default value is false."
-  },
-  {
-    "name": "api.security.token.secret",
-    "type": "java.lang.String",
-    "description": "Json Web Token Secret, used to encrypt and decrypt the JWT Tokens on HTTPs Requests."
-  },
-  {
-    "name": "admin.config.username",
-    "type": "java.lang.String",
-    "description": "Username to create the first admin user when the application starts."
-  },
-  {
-    "name": "admin.config.password",
-    "type": "java.lang.String",
-    "description": "Password to create the first admin user when the application starts."
-  },
-  {
-    "name": "admin.config.sobrenome",
-    "type": "java.lang.String",
-    "description": "A surname for admin user."
-  },
-  {
-    "name": "admin.config.nome",
-    "type": "java.lang.String",
-    "description": "A name for admin user."
-  },
-  {
-    "name": "admin.config.email",
-    "type": "java.lang.String",
-    "description": "An email to admin user."
-  },
-  {
-    "name": "api.issuer",
-    "type": "java.lang.String",
-    "description": "The link (URL) of the backend APIs (issuer of token JWT)."
-  },
-  {
-    "name": "jwt.private.key",
-    "type": "java.lang.String",
-    "description": "A private RSA Key to encode JWT Tokens."
-  },
-  {
-    "name": "jwt.public.key",
-    "type": "java.lang.String",
-    "description": "A public RSA Key to decode JWT Tokens."
-  },
-  {
-    "name": "front-end.url",
-    "type": "java.lang.String",
-    "description": "The link (URL) of the frontend application."
-  },
-  {
-    "name": "xlsx.file.limit",
-    "type": "java.lang.String",
-    "description": "Line limit of files '.xlsx' according to the official Microsoft documentation: https://support.microsoft.com/en-us/office/what-to-do-if-a-data-set-is-too-large-for-the-excel-grid-976e6a34-9756-48f4-828c-ca80b3d0e15c"
-  }
-]}
+{
+  "properties": [
+    {
+      "name": "use.swagger",
+      "type": "java.lang.String",
+      "description": "This annotation turns swagger enabled in dev mode and the default value is false."
+    },
+    {
+      "name": "api.security.token.secret",
+      "type": "java.lang.String",
+      "description": "Json Web Token Secret, used to encrypt and decrypt the JWT Tokens on HTTPs Requests."
+    },
+    {
+      "name": "admin.config.username",
+      "type": "java.lang.String",
+      "description": "Username to create the first admin user when the application starts."
+    },
+    {
+      "name": "admin.config.password",
+      "type": "java.lang.String",
+      "description": "Password to create the first admin user when the application starts."
+    },
+    {
+      "name": "admin.config.sobrenome",
+      "type": "java.lang.String",
+      "description": "A surname for admin user."
+    },
+    {
+      "name": "admin.config.nome",
+      "type": "java.lang.String",
+      "description": "A name for admin user."
+    },
+    {
+      "name": "admin.config.email",
+      "type": "java.lang.String",
+      "description": "An email to admin user."
+    },
+    {
+      "name": "api.issuer",
+      "type": "java.lang.String",
+      "description": "The link (URL) of the backend APIs (issuer of token JWT)."
+    },
+    {
+      "name": "jwt.private.key",
+      "type": "java.lang.String",
+      "description": "A private RSA Key to encode JWT Tokens."
+    },
+    {
+      "name": "jwt.public.key",
+      "type": "java.lang.String",
+      "description": "A public RSA Key to decode JWT Tokens."
+    },
+    {
+      "name": "front-end.url",
+      "type": "java.lang.String",
+      "description": "The link (URL) of the frontend application."
+    },
+    {
+      "name": "xlsx.file.limit",
+      "type": "java.lang.String",
+      "description": "Line limit of files '.xlsx' according to the official Microsoft documentation: https://support.microsoft.com/en-us/office/what-to-do-if-a-data-set-is-too-large-for-the-excel-grid-976e6a34-9756-48f4-828c-ca80b3d0e15c"
+    },
+    {
+      "name": "import-csv.redis.key",
+      "type": "java.lang.String",
+      "description": "The redis key for the result of the import csv (saveFromCsv) method"
+    }
+  ]
+}

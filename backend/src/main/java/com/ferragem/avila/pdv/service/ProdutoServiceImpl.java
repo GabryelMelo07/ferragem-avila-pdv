@@ -5,12 +5,16 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.Reader;
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
+import org.hibernate.exception.ConstraintViolationException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.redis.core.RedisTemplate;
@@ -47,13 +51,17 @@ public class ProdutoServiceImpl implements ProdutoService {
     @Value("${xlsx.file.limit}")
     private Integer xlsxFileLimit;
     
-    // Tópicos do sistema de Pub/Sub do Redis, para enviar as mensagens.
+    @Value("${import-csv.redis.key}")
+    private String importCsvRedisKey;
+
+    // Tópicos do sistema de Pub/Sub do Redis, para publicar mensagens que serão consumidas no frontend.
     private final String RELATORIO_GERAL_PRODUTOS_CHANNEL = "pdv:relatorio-produtos";
-    // private final String RESULTADO_UPLOAD_CSV_CHANNEL = "pdv:resultado-upload-csv";
-    
+    private final String RESULTADO_UPLOAD_CSV_CHANNEL = "pdv:resultado-upload-csv";
+
     /**
      * Este método é responsável por carregar todos os registros da tabela produtos
-     * do banco de dados, inseri-los no Redis e avisar o front-end do término do processo
+     * do banco de dados, inseri-los no Redis e avisar o front-end do término do
+     * processo
      * via sistema de Pub/Sub do próprio Redis.
      * 
      * Ele roda de forma assíncrona em uma thread separada.
@@ -66,7 +74,7 @@ public class ProdutoServiceImpl implements ProdutoService {
         List<Produto> produtos = produtoRepository.findByAtivoTrue();
 
         if (produtos.size() > xlsxFileLimit)
-            throw new RuntimeException("Arquivos de formato .xlsx suportam somente " + xlsxFileLimit + " linhas."); //Personalizar esta exception.
+            throw new RuntimeException("Arquivos de formato .xlsx suportam somente " + xlsxFileLimit + " linhas."); // Personalizar esta exception
 
         if (produtos != null && !produtos.isEmpty()) {
             String produtosToJson = objectMapper.writeValueAsString(produtos);
@@ -74,13 +82,13 @@ public class ProdutoServiceImpl implements ProdutoService {
             redisTemplate.convertAndSend(RELATORIO_GERAL_PRODUTOS_CHANNEL, "Relatório de produtos Carregado com sucesso!");
         }
     }
-    
+
     @Cacheable(value = "produtos_ativos", key = "'pagina_' + #pageable.pageNumber")
     @Override
     public Page<Produto> getAll(Pageable pageable) {
         return produtoRepository.findByAtivoTrue(pageable);
     }
-    
+
     @Cacheable(value = "produtos_inativos", key = "'pagina_' + #pageable.pageNumber")
     @Override
     public Page<Produto> getAllInativos(Pageable pageable) {
@@ -92,12 +100,13 @@ public class ProdutoServiceImpl implements ProdutoService {
     public Page<Produto> getAllByDescricao(Pageable pageable, String descricao) {
         return produtoRepository.findByDescricaoContainingIgnoreCaseAndAtivoTrue(pageable, descricao);
     }
-    
+
     @Override
     public Produto getById(long id) {
-        return produtoRepository.findByIdAndAtivoTrue(id).orElseThrow(() -> new ProdutoNaoEncontradoException("Produto não existe."));
+        return produtoRepository.findByIdAndAtivoTrue(id)
+                .orElseThrow(() -> new ProdutoNaoEncontradoException("Produto não existe."));
     }
-    
+
     @Override
     public Produto getByCodigoBarras(String codigoBarras) {
         return produtoRepository.findByCodigoBarrasEAN13(codigoBarras);
@@ -107,23 +116,23 @@ public class ProdutoServiceImpl implements ProdutoService {
     public List<Produto> getMaisVendidosMes(LocalDate data) {
         return produtoRepository.getMaisVendidosMes(data.getMonthValue(), data.getYear());
     }
-    
+
     @Override
     public Page<Produto> getProdutosBaixoEstoque(Pageable pageable) {
         return produtoRepository.findProdutosComEstoqueBaixo(pageable);
     }
-    
+
     @CacheEvict(value = "produtos_ativos", allEntries = true)
     @Override
     public Produto save(Produto produto) {
         return produtoRepository.save(produto);
     }
-    
+
     @Override
     public Produto save(ProdutoDto dto) {
         if (!dto.codigoBarrasEAN13().matches("^\\d{13}$"))
             throw new CodigoBarrasInvalidoException();
-        
+
         Produto p = new Produto(dto);
         return save(p);
     }
@@ -133,18 +142,19 @@ public class ProdutoServiceImpl implements ProdutoService {
     public Produto update(long id, ProdutoDto dto) {
         if (!dto.codigoBarrasEAN13().matches("^\\d{13}$"))
             throw new CodigoBarrasInvalidoException();
-        
+
         Produto p = getById(id);
         p.setDescricao(dto.descricao());
         p.setUnidadeMedida(dto.unidadeMedida());
         p.setEstoque(dto.estoque());
-        p.setPrecoFornecedor(dto.precoFornecedor());;
+        p.setPrecoFornecedor(dto.precoFornecedor());
+        ;
         p.setPreco(dto.preco());
         p.setCodigoBarrasEAN13(dto.codigoBarrasEAN13());
         return save(p);
     }
 
-    @CacheEvict(value = {"produtos_ativos", "produtos_inativos"}, allEntries = true)
+    @CacheEvict(value = { "produtos_ativos", "produtos_inativos" }, allEntries = true)
     @Override
     public void delete(long id) {
         Produto p = getById(id);
@@ -158,36 +168,78 @@ public class ProdutoServiceImpl implements ProdutoService {
                     .withType(CsvToProduto.class)
                     .withIgnoreLeadingWhiteSpace(true)
                     .build();
-                    
+
             return csvToBean.parse();
         }
     }
 
-    @CacheEvict(value = "produtos_ativos", allEntries = true)
+    @Async
     @Override
-    public ProdutosFromCsv saveProductsFromCsv(MultipartFile file) throws IOException {
-        List<CsvToProduto> csvToProduto = parseCsvFile(file);
-        ProdutosFromCsv produtosFromCsv = new ProdutosFromCsv();
+    @CacheEvict(value = "produtos_ativos", allEntries = true)
+    public void importarProdutosCsv(MultipartFile file) throws IOException {
+        List<CsvToProduto> produtosCsv = parseCsvFile(file);
+        List<Produto> produtos = new ArrayList<>();
+        ProdutosFromCsv resultado = new ProdutosFromCsv();
 
-        for (CsvToProduto produto : csvToProduto) {
+        for (CsvToProduto pCsv : produtosCsv) {
+            Produto p = new Produto(
+                    pCsv.getDescricao(),
+                    pCsv.getUnidadeMedida(),
+                    pCsv.getEstoque(),
+                    pCsv.getPrecoFornecedor(),
+                    pCsv.getPreco(),
+                    pCsv.getCodigoBarrasEAN13());
+
+            produtos.add(p);
+        }
+
+        for (Produto produto : produtos) {
             try {
-                Produto p = new Produto(
-                    produto.getDescricao(),
-                    produto.getUnidadeMedida(),
-                    produto.getEstoque(),
-                    produto.getPrecoFornecedor(),
-                    produto.getPreco(),
-                    produto.getCodigoBarrasEAN13()
-                );
-
-                save(p);
-                produtosFromCsv.somar();
+                produtoRepository.save(produto);
+                resultado.somar();
             } catch (Exception e) {
-                produtosFromCsv.getProdutosComErro().add(new ProdutoComErro(produto, e.getMessage()));
+                resultado.getProdutosComErro().add(new ProdutoComErro(produto.getDescricao(), produto.getCodigoBarrasEAN13(), tratarMensagemErro(e)));
             }
         }
 
-        return produtosFromCsv;
+        if (resultado.getProdutosComErro().isEmpty()) {
+            redisTemplate.convertAndSend(RESULTADO_UPLOAD_CSV_CHANNEL,
+                    String.format("Todos os %d produtos foram importados com sucesso!", resultado.getProdutosSalvos()));
+        } else {
+            String resultadoJson = objectMapper.writeValueAsString(resultado);
+            redisTemplate.opsForValue().set(importCsvRedisKey, resultadoJson, 3, TimeUnit.HOURS);
+            
+            redisTemplate.convertAndSend(
+                    RESULTADO_UPLOAD_CSV_CHANNEL,
+                    String.format("""
+                            O processo de importação dos produtos foi concluído.
+                            Produtos salvos: %d
+                            Produtos com erro: %d
+                            """, resultado.getProdutosSalvos(), resultado.getProdutosComErro().size()));
+        }
     }
-    
+
+    private String tratarMensagemErro(Exception e) {
+        String mensagemErro = "Erro ao inserir produto: ";
+                
+        if (e.getCause() instanceof ConstraintViolationException || e.getCause() instanceof DataIntegrityViolationException) {
+            String mensagemSQL = e.getCause().getMessage();
+
+            if (mensagemSQL.contains("produto_descricao_key")) {
+                mensagemErro += "Já existe um produto com esta descrição cadastrado.";
+            } else if (mensagemSQL.contains("produto_codigo_barrasean13_key")) {
+                mensagemErro += "Já existe um produto com este código de barras cadastrado.";
+            } else if (mensagemSQL.contains("produto_descricao_key") && mensagemSQL.contains("produto_codigo_barrasean13_key")) {
+                mensagemErro += "Já existe um produto com esta descrição e código de barras cadastrado.";
+            } else {
+                mensagemErro += "Algum campo deste produto já está cadastrado, entre em contato com o suporte.";
+            }
+
+        } else {
+            mensagemErro += "Erro desconhecido, entre em contato com o suporte.";
+        }
+
+        return mensagemErro;
+    }
+
 }
