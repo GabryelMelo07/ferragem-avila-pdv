@@ -1,6 +1,4 @@
 package com.ferragem.avila.pdv.dto;
 
-import java.time.LocalDateTime;
-
-public record LoginResponseDto(String accessToken, LocalDateTime expiresIn) {
+public record LoginResponseDto(String accessToken, String refreshToken) {
 }
