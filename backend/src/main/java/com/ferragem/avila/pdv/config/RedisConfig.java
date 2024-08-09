@@ -19,29 +19,32 @@ import java.time.Duration;
 @EnableCaching
 public class RedisConfig {
 
-        @Bean
-        public RedisCacheManager cacheManager(RedisConnectionFactory redisConnectionFactory, ObjectMapper objectMapper) {
-            RedisCacheConfiguration cacheConfig = RedisCacheConfiguration.defaultCacheConfig().entryTtl(Duration.ofHours(12));
-            return RedisCacheManager.builder(redisConnectionFactory).cacheDefaults(cacheConfig).build();
-        }
+    @Bean
+    public RedisCacheManager cacheManager(RedisConnectionFactory redisConnectionFactory, ObjectMapper objectMapper) {
+        RedisCacheConfiguration cacheConfig = RedisCacheConfiguration.defaultCacheConfig()
+                .entryTtl(Duration.ofHours(12));
+        return RedisCacheManager.builder(redisConnectionFactory).cacheDefaults(cacheConfig).build();
+    }
 
-        @Bean
-        public RedisTemplate<String, Object> redisTemplate(RedisConnectionFactory redisConnectionFactory, ObjectMapper objectMapper) {
-            RedisTemplate<String, Object> template = new RedisTemplate<>();
-            template.setConnectionFactory(redisConnectionFactory);
-            template.setKeySerializer(new StringRedisSerializer());
-            template.setValueSerializer(new Jackson2JsonRedisSerializer<>(Object.class));
+    @Bean
+    public RedisTemplate<String, Object> redisTemplate(RedisConnectionFactory redisConnectionFactory,
+            ObjectMapper objectMapper) {
+        RedisTemplate<String, Object> template = new RedisTemplate<>();
+        template.setConnectionFactory(redisConnectionFactory);
+        template.setKeySerializer(new StringRedisSerializer());
+        template.setValueSerializer(new Jackson2JsonRedisSerializer<>(Object.class));
 
-            // Configuração para permitir que o Jackson acesse campos privados
-            objectMapper.setVisibility(PropertyAccessor.ALL, JsonAutoDetect.Visibility.ANY);
-            // Configuração para ignorar propriedades desconhecidas
-            objectMapper.configure(com.fasterxml.jackson.databind.DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+        // Configuração para permitir que o Jackson acesse campos privados
+        objectMapper.setVisibility(PropertyAccessor.ALL, JsonAutoDetect.Visibility.ANY);
+        // Configuração para ignorar propriedades desconhecidas
+        objectMapper.configure(com.fasterxml.jackson.databind.DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
 
-            // Configuração para usar o Jackson2JsonRedisSerializer também para desserialização
-            template.setHashKeySerializer(new StringRedisSerializer());
-            template.setHashValueSerializer(new Jackson2JsonRedisSerializer<>(Object.class));
-            template.afterPropertiesSet();
-            return template;
-        }
+        // Configuração para usar o Jackson2JsonRedisSerializer também para
+        // desserialização
+        template.setHashKeySerializer(new StringRedisSerializer());
+        template.setHashValueSerializer(new Jackson2JsonRedisSerializer<>(Object.class));
+        template.afterPropertiesSet();
+        return template;
+    }
 
 }
