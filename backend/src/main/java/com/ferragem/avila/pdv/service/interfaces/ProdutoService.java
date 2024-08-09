@@ -11,7 +11,6 @@ import org.springframework.web.multipart.MultipartFile;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.ferragem.avila.pdv.dto.ProdutoDto;
 import com.ferragem.avila.pdv.model.Produto;
-import com.ferragem.avila.pdv.model.utils.ProdutosFromCsv;
 
 public interface ProdutoService {
     void gerarRelatorioGeral(String redisRelatorioProdutosKey) throws JsonProcessingException;
@@ -34,7 +33,7 @@ public interface ProdutoService {
     
     Produto save(Produto produto);
 
-    ProdutosFromCsv saveProductsFromCsv(MultipartFile file) throws IOException;
+    void importarProdutosCsv(MultipartFile file) throws IOException;
     
     Produto update(long id, ProdutoDto dto);
 

@@ -7,7 +7,8 @@ import lombok.Data;
 @AllArgsConstructor
 public class ProdutoComErro {
     
-    private Object produto;
+    private String descricao;
+    private String codigoBarras;
     private String erro;
     
 }
