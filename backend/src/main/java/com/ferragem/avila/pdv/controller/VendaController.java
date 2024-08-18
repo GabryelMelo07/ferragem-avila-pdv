@@ -135,7 +135,7 @@ public class VendaController {
             case NAO_EXISTE:
                 return ResponseEntity.badRequest().body("Venda não existe.");
             default:
-                return ResponseEntity.internalServerError().body("Erro ao tentar deletar a venda, entre em contato com o suporte");
+                return ResponseEntity.internalServerError().body("Erro ao tentar deletar a venda, entre em contato com o suporte.");
         }
     }
 

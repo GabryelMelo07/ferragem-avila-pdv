@@ -90,7 +90,7 @@ public class ProdutoServiceImpl implements ProdutoService {
                 e.printStackTrace();
             }
 
-            redisTemplate.opsForValue().set(relatorioKey, produtosToJson);
+            redisTemplate.opsForValue().set(relatorioKey, produtosToJson, 3, TimeUnit.HOURS);
             redisTemplate.convertAndSend(RELATORIO_GERAL_PRODUTOS_CHANNEL, "Relatório de produtos Carregado com sucesso!");
         }
     }
