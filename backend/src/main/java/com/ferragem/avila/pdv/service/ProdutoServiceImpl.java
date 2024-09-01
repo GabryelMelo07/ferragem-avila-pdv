@@ -135,12 +135,12 @@ public class ProdutoServiceImpl implements ProdutoService {
     }
 
     @Override
-    @CacheEvict(value = "produtos_ativos", allEntries = true)
     public Produto save(Produto produto) {
         return produtoRepository.save(produto);
     }
 
     @Override
+    @CacheEvict(value = "produtos_ativos", allEntries = true)
     public Produto save(ProdutoDto dto) {
         if (!dto.codigoBarrasEAN13().matches("^\\d{13}$"))
             throw new CodigoBarrasInvalidoException();

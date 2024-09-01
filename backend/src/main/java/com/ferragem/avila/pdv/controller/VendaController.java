@@ -101,12 +101,12 @@ public class VendaController {
     }
 
     @PostMapping("/edit-item/{itemId}")
-    public ResponseEntity<Venda> editItem(@RequestParam long itemId, @RequestParam @PositiveOrZero float quantidade) {
+    public ResponseEntity<Venda> editItem(@PathVariable long itemId, @RequestParam @PositiveOrZero float quantidade) {
         return ResponseEntity.ok(vendaService.editItem(itemId, quantidade));
     }
 
     @DeleteMapping("/remover-item/{itemId}")
-    public ResponseEntity<Venda> removeItem(@RequestParam long itemId) {
+    public ResponseEntity<Venda> removeItem(@PathVariable long itemId) {
         return ResponseEntity.ok(vendaService.removeItem(itemId));
     }
 
