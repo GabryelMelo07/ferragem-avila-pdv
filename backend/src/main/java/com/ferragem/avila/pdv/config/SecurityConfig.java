@@ -62,6 +62,7 @@ public class SecurityConfig {
                     .requestMatchers(HttpMethod.POST, "/auth/reset-password/request").permitAll()
                     .requestMatchers(HttpMethod.POST, "/auth/refresh-token").permitAll()
                     .requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll()
+                    .requestMatchers(HttpMethod.GET, "/health-check").permitAll()
                     .anyRequest().authenticated())
             .csrf(csrf -> csrf.disable())
             .oauth2ResourceServer(oauth2 -> oauth2.jwt(Customizer.withDefaults()))
