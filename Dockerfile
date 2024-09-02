@@ -3,7 +3,7 @@ FROM ubuntu:latest AS build
 RUN apt-get update
 RUN apt-get install openjdk-21-jdk -y
 RUN apt-get install maven -y
-COPY . .
+COPY . ./backend/
 
 RUN openssl genpkey -algorithm RSA -out ./backend/src/main/resources/app.key -pkeyopt rsa_keygen_bits:2048
 RUN openssl rsa -pubout -in ./backend/src/main/resources/app.key -out ./backend/src/main/resources/app.pub
