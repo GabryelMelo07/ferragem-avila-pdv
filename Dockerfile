@@ -5,8 +5,8 @@ RUN apt-get install openjdk-21-jdk -y
 RUN apt-get install maven -y
 COPY . .
 
-RUN openssl genpkey -algorithm RSA -out ./backend/src/main/resources/app.key -pkeyopt rsa_keygen_bits:2048
-RUN openssl rsa -pubout -in ./backend/src/main/resources/app.key -out ./backend/src/main/resources/app.pub
+RUN openssl genpkey -algorithm RSA -out ./src/main/resources/app.key -pkeyopt rsa_keygen_bits:2048
+RUN openssl rsa -pubout -in ./src/main/resources/app.key -out ./src/main/resources/app.pub
 
 RUN mvn clean install 
 
