@@ -18,7 +18,7 @@ public interface ProdutoService {
     
     Page<Produto> getAllInativos(Pageable pageable);
     
-    Page<Produto> getAllByDescricao(Pageable pageable, String descricao);
+    Page<Produto> findByParams(Pageable pageable, String parametro);
 
     Produto getById(long id);
 

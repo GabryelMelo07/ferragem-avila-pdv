@@ -108,9 +108,8 @@ public class ProdutoServiceImpl implements ProdutoService {
     }
 
     @Override
-    @Cacheable(value = "produto_by_descricao", key = "'pagina_' + #pageable.pageNumber", unless = "#result == null or #result.isEmpty()")
-    public Page<Produto> getAllByDescricao(Pageable pageable, String descricao) {
-        return produtoRepository.findByDescricaoContainingIgnoreCaseAndAtivoTrue(pageable, descricao);
+    public Page<Produto> findByParams(Pageable pageable, String parametro) {
+        return produtoRepository.findByParametros(pageable, parametro);
     }
 
     @Override
