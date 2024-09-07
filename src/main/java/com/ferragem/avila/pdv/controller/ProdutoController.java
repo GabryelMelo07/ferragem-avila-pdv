@@ -62,9 +62,9 @@ public class ProdutoController {
         return ResponseEntity.ok().body(produtoService.getAllInativos(pageable));
     }
 
-    @GetMapping("/descricao") // Refatorar para usar Query params
-    public ResponseEntity<Page<Produto>> getAllProdutosByDescricao(Pageable pageable, @RequestParam String descricao) {
-        return ResponseEntity.ok().body(produtoService.getAllByDescricao(pageable, descricao));
+    @GetMapping("/buscar")
+    public ResponseEntity<Page<Produto>> buscarProdutosPorParametro(Pageable pageable, @RequestParam String parametro) {
+        return ResponseEntity.ok().body(produtoService.findByParams(pageable, parametro));
     }
 
     @GetMapping("/{id}")

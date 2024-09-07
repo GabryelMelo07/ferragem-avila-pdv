@@ -20,7 +20,14 @@ public interface ProdutoRepository extends JpaRepository<Produto, Long> {
 
     Page<Produto> findByAtivoFalse(Pageable pageable);
 
-    Page<Produto> findByDescricaoContainingIgnoreCaseAndAtivoTrue(Pageable pageable, String nome);
+    @Query("""
+            SELECT DISTINCT p FROM Produto p
+            WHERE
+                p.ativo = true
+                AND (p.codigoBarrasEAN13 LIKE CONCAT(:parametro, '%'))
+                OR (p.descricao LIKE CONCAT('%', :parametro, '%'))
+        """)
+    Page<Produto> findByParametros(Pageable pageable, String parametro);
 
     Produto findByCodigoBarrasEAN13(String codigoBarras);
 
