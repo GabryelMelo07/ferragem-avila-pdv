@@ -3,7 +3,7 @@ package com.ferragem.avila.pdv.model;
 import java.io.Serializable;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
-import java.time.ZoneOffset;
+import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -60,7 +60,7 @@ public class Venda implements Serializable {
     private List<Item> itens;
 
     public Venda() {
-        this.dataHoraInicio = LocalDateTime.now().atOffset(ZoneOffset.ofHours(-3)).toLocalDateTime();
+        this.dataHoraInicio = LocalDateTime.now(ZoneId.of("America/Sao_Paulo"));
         this.concluida = false;
         this.precoTotal = BigDecimal.ZERO;
         this.itens = new ArrayList<Item>();
