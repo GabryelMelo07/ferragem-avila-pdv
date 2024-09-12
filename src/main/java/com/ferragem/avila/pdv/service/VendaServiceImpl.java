@@ -87,11 +87,19 @@ public class VendaServiceImpl implements VendaService {
     }
 
     @Override
+    @CacheEvict(value = { "vendas", "vendas_between_datas", "produtos_ativos", "produtos_inativos" }, allEntries = true)
     public VendaExclusaoResultado delete(Long id) {
         if (vendaRepository.existsById(id)) {
             Venda venda = getById(id);
 
             if (venda.isConcluida()) {
+                for (Item item : venda.getItens()) {
+                    Long produtoId = item.getProduto().getId();
+                    Produto p = produtoService.getById(produtoId);
+                    p.sumEstoque(item.getQuantidade());
+                    produtoService.save(p);
+                }
+                
                 vendaRepository.delete(venda);
                 return VendaExclusaoResultado.DELETADA;
             } else {
@@ -164,8 +172,8 @@ public class VendaServiceImpl implements VendaService {
     @Override
     public Venda editItem(long itemId, float quantidade) {
         Venda venda = getVendaAtiva().orElseThrow(() -> new VendaInativaException());
-        Item item = itemService.getById(itemId); // QTD 5
-        Produto produto = item.getProduto(); // ESTOQUE 0
+        Item item = itemService.getById(itemId);
+        Produto produto = item.getProduto();
 
         float estoqueAtual = produto.getEstoque() + item.getQuantidade();
         float novoEstoque = estoqueAtual - quantidade;
@@ -200,7 +208,7 @@ public class VendaServiceImpl implements VendaService {
     }
 
     @Override
-    @CacheEvict(value = { "vendas", "vendas_between_datas" }, allEntries = true)
+    @CacheEvict(value = { "vendas", "vendas_between_datas", "produtos_ativos" }, allEntries = true)
     public void concluirVenda(VendaDto dto) {
         Venda venda = getVendaAtiva().orElseThrow(() -> new VendaInativaException());
         venda.setDataHoraConclusao(dto.dataHoraConclusao());
