@@ -9,6 +9,7 @@ import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.ferragem.avila.pdv.dto.ItemDto;
 import com.ferragem.avila.pdv.dto.VendaDto;
@@ -170,6 +171,7 @@ public class VendaServiceImpl implements VendaService {
     }
 
     @Override
+    @Transactional
     public Venda editItem(long itemId, float quantidade) {
         Venda venda = getVendaAtiva().orElseThrow(() -> new VendaInativaException());
         Item item = itemService.getById(itemId);
@@ -183,6 +185,8 @@ public class VendaServiceImpl implements VendaService {
 
         produto.setEstoque(novoEstoque);
         item.setQuantidade(quantidade);
+        venda.getItens().remove(item);
+        venda.getItens().add(item);
 
         item.calcularPrecoTotal();
         venda.calcularPrecoTotal();
