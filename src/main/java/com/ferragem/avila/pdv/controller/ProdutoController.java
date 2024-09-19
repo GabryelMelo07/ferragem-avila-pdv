@@ -4,7 +4,10 @@ import java.io.IOException;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.domain.Sort.Direction;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -53,7 +56,16 @@ public class ProdutoController {
     }
 
     @GetMapping("/ativos")
-    public ResponseEntity<Page<Produto>> getAllProdutosAtivos(Pageable pageable) {
+    public ResponseEntity<Page<Produto>> getAllProdutosAtivos(Pageable pageable, Direction direction) {
+        if (direction == Direction.DESC) {
+            Sort originalSort = pageable.getSort();
+            Sort sort = Sort.by(originalSort.stream()
+                    .map(order -> new Sort.Order(direction, order.getProperty()))
+                    .toList());
+
+            pageable = PageRequest.of(pageable.getPageNumber(), pageable.getPageSize(), sort);
+        }
+        
         return ResponseEntity.ok().body(produtoService.getAll(pageable));
     }
 
