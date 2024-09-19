@@ -96,7 +96,7 @@ public class ProdutoServiceImpl implements ProdutoService {
     }
 
     @Override
-    @Cacheable(value = "produtos_ativos", key = "'pagina_' + #pageable.pageNumber", unless = "#result == null or #result.isEmpty()")
+    @Cacheable(value = "produtos_ativos", key = "'pagina_' + #pageable.pageNumber + '_' + #pageable.sort.toString()", unless = "#result == null or #result.isEmpty()")
     public Page<Produto> getAll(Pageable pageable) {
         return produtoRepository.findByAtivoTrue(pageable);
     }
