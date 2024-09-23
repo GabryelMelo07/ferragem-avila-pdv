@@ -25,7 +25,7 @@ public interface ProdutoRepository extends JpaRepository<Produto, Long> {
             WHERE
                 p.ativo = true
                 AND (p.codigoBarrasEAN13 LIKE CONCAT(:parametro, '%'))
-                OR (p.descricao LIKE CONCAT('%', :parametro, '%'))
+                OR (LOWER(p.descricao) LIKE LOWER(CONCAT('%', :parametro, '%')))
         """)
     Page<Produto> findByParametros(Pageable pageable, String parametro);
 
