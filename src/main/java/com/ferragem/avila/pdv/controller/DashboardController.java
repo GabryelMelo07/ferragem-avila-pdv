@@ -99,5 +99,10 @@ public class DashboardController {
     public ResponseEntity<GraficoVendasDto> getGraficoMensalVendas() {
         return ResponseEntity.ok(vendaService.getGraficoMensalVendas());
     }
+
+    @GetMapping("/vendas/grafico-semanal")
+    public ResponseEntity<GraficoVendasDto> getGraficoSemanalVendas() {
+        return ResponseEntity.ok(vendaService.getGraficoSemanalVendas());
+    }
     
 }

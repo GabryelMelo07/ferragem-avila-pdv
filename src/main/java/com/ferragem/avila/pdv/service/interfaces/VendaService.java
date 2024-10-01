@@ -25,6 +25,8 @@ public interface VendaService {
     List<Item> getItensFromVendaAtiva();
     
     GraficoVendasDto getGraficoMensalVendas();
+    
+    GraficoVendasDto getGraficoSemanalVendas();
 
     Venda save(Venda venda);
 

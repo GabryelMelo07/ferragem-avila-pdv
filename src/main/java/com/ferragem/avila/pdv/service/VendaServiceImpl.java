@@ -2,6 +2,7 @@ package com.ferragem.avila.pdv.service;
 
 import java.math.BigDecimal;
 import java.time.DateTimeException;
+import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.YearMonth;
 import java.time.ZoneId;
@@ -74,7 +75,16 @@ public class VendaServiceImpl implements VendaService {
     public GraficoVendasDto getGraficoMensalVendas() {
         LocalDate dataAtual = LocalDate.now(ZoneId.of("America/Sao_Paulo"));
         YearMonth mesAno = YearMonth.from(dataAtual);
+        return getGraficoData(dataAtual, dataAtual.withDayOfMonth(1), mesAno.atEndOfMonth());
+    }
 
+    @Override
+    public GraficoVendasDto getGraficoSemanalVendas() {
+        LocalDate dataAtual = LocalDate.now(ZoneId.of("America/Sao_Paulo"));
+        return getGraficoData(dataAtual, dataAtual.with(DayOfWeek.MONDAY), dataAtual.with(DayOfWeek.SUNDAY));
+    }
+
+    private GraficoVendasDto getGraficoData(LocalDate dataAtual, LocalDate dataInicial, LocalDate dataFinal) {
         int pagina = 0;
         int tamanhoPagina = 1000;
 
@@ -85,7 +95,7 @@ public class VendaServiceImpl implements VendaService {
         BigDecimal lucroTotalVendas = BigDecimal.ZERO;
 
         do {
-            paginaVendas = vendaRepository.findByDataHoraConclusaoBetween(pageable, dataAtual.withDayOfMonth(1), mesAno.atEndOfMonth());
+            paginaVendas = vendaRepository.findByDataHoraConclusaoBetween(pageable, dataInicial, dataFinal);
 
             for (Venda venda : paginaVendas.getContent()) {
                 valorTotalVendas = valorTotalVendas.add(venda.getPrecoTotal());
@@ -147,6 +157,7 @@ public class VendaServiceImpl implements VendaService {
     }
 
     @Override
+    @Transactional
     public Venda addItem(ItemDto itemDto, VendedorDto vendedor) {
         long produtoId = itemDto.produtoId();
         float itemQtd = itemDto.quantidade();
