@@ -1,16 +1,22 @@
 package com.ferragem.avila.pdv.service;
 
+import java.math.BigDecimal;
+import java.time.DateTimeException;
 import java.time.LocalDate;
+import java.time.YearMonth;
+import java.time.ZoneId;
 import java.util.List;
 import java.util.Optional;
 
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.ferragem.avila.pdv.dto.GraficoVendasDto;
 import com.ferragem.avila.pdv.dto.ItemDto;
 import com.ferragem.avila.pdv.dto.VendaDto;
 import com.ferragem.avila.pdv.dto.VendedorDto;
@@ -34,7 +40,7 @@ public class VendaServiceImpl implements VendaService {
     private final VendaRepository vendaRepository;
     private final ItemService itemService;
     private final ProdutoService produtoService;
-    
+
     public VendaServiceImpl(VendaRepository vendaRepository, ItemService itemService, ProdutoService produtoService) {
         this.vendaRepository = vendaRepository;
         this.itemService = itemService;
@@ -63,6 +69,35 @@ public class VendaServiceImpl implements VendaService {
         Venda venda = getVendaAtiva().orElseThrow(() -> new VendaInativaException());
         return venda.getItens();
     }
+    
+    @Override
+    public GraficoVendasDto getGraficoMensalVendas() {
+        LocalDate dataAtual = LocalDate.now(ZoneId.of("America/Sao_Paulo"));
+        YearMonth mesAno = YearMonth.from(dataAtual);
+
+        int pagina = 0;
+        int tamanhoPagina = 1000;
+
+        Pageable pageable = PageRequest.of(pagina, tamanhoPagina);
+        Page<Venda> paginaVendas;
+
+        BigDecimal valorTotalVendas = BigDecimal.ZERO;
+        BigDecimal lucroTotalVendas = BigDecimal.ZERO;
+
+        do {
+            paginaVendas = vendaRepository.findByDataHoraConclusaoBetween(pageable, dataAtual.withDayOfMonth(1), mesAno.atEndOfMonth());
+
+            for (Venda venda : paginaVendas.getContent()) {
+                valorTotalVendas = valorTotalVendas.add(venda.getPrecoTotal());
+                lucroTotalVendas = lucroTotalVendas.add(venda.calcularLucroTotal());
+            }
+
+            pageable = PageRequest.of(++pagina, tamanhoPagina);
+            
+        } while (paginaVendas.hasNext());
+        
+        return new GraficoVendasDto(dataAtual, valorTotalVendas, lucroTotalVendas);
+    }
 
     @Override
     public Venda save(Venda v) {
@@ -82,7 +117,7 @@ public class VendaServiceImpl implements VendaService {
         for (Item item : itens) {
             item.getProduto().sumEstoque(item.getQuantidade());
         }
-            
+
         itemService.deleteAll(itens);
         vendaRepository.deleteById(venda.getId());
     }
@@ -100,14 +135,14 @@ public class VendaServiceImpl implements VendaService {
                     p.sumEstoque(item.getQuantidade());
                     produtoService.save(p);
                 }
-                
+
                 vendaRepository.delete(venda);
                 return VendaExclusaoResultado.DELETADA;
             } else {
                 return VendaExclusaoResultado.NAO_CONCLUIDA;
             }
         }
-        
+
         return VendaExclusaoResultado.NAO_EXISTE;
     }
 
@@ -145,9 +180,9 @@ public class VendaServiceImpl implements VendaService {
 
         produto.subtractEstoque(itemQtd);
         produtoService.save(produto);
-        
+
         itemService.save(item);
-        
+
         venda.getItens().add(item);
         venda.calcularPrecoTotal();
         return save(venda);
@@ -215,6 +250,10 @@ public class VendaServiceImpl implements VendaService {
     @CacheEvict(value = { "vendas", "vendas_between_datas", "produtos_ativos" }, allEntries = true)
     public void concluirVenda(VendaDto dto) {
         Venda venda = getVendaAtiva().orElseThrow(() -> new VendaInativaException());
+
+        if (dto.dataHoraConclusao().isBefore(venda.getDataHoraInicio()))
+            throw new DateTimeException("A data de conclusão da venda não pode ser anterior a data de início.");
+        
         venda.setDataHoraConclusao(dto.dataHoraConclusao());
         venda.setFormaPagamento(dto.formaPagamento());
         venda.setConcluida(true);

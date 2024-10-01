@@ -78,4 +78,11 @@ public class Venda implements Serializable {
         }
     }
 
+    public BigDecimal calcularLucroTotal() {
+        return itens.stream()
+                    .map(item -> item.getPrecoUnitarioAtual().subtract(item.getPrecoFornecedorAtual())
+                    .multiply(BigDecimal.valueOf(item.getQuantidade())))
+                    .reduce(BigDecimal.ZERO, BigDecimal::add);
+    }
+
 }

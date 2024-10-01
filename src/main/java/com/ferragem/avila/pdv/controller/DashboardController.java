@@ -17,31 +17,30 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.ferragem.avila.pdv.dto.GraficoVendasDto;
 import com.ferragem.avila.pdv.model.Produto;
 import com.ferragem.avila.pdv.service.interfaces.ProdutoService;
+import com.ferragem.avila.pdv.service.interfaces.VendaService;
 
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 import org.springframework.web.bind.annotation.GetMapping;
 
 @RestController
 @RequestMapping("/dashboard")
+@RequiredArgsConstructor
 @PreAuthorize("hasAuthority('SCOPE_ADMIN')")
 @Slf4j
 public class DashboardController {
 
+    private final VendaService vendaService;
     private final ProdutoService produtoService;
     private final RedisTemplate<String, Object> redisTemplate;
     private final ObjectMapper objectMapper;
 
     // Chave para inserir e buscar o resultado do processamento assíncrono do upload de produtos via CSV.
     private final String RELATORIO_PRODUTOS_KEY = "produtos_ativos::relatorio";
-
-    DashboardController(ProdutoService produtoService, RedisTemplate<String, Object> redisTemplate, ObjectMapper objectMapper) {
-        this.produtoService = produtoService;
-        this.redisTemplate = redisTemplate;
-        this.objectMapper = objectMapper;
-    }
 
     /**
      * Este endpoint irá verificar se existe a chave "produtos_ativos::relatorio" no Redis.
@@ -94,6 +93,11 @@ public class DashboardController {
     @GetMapping("/produtos/mais-vendidos")
     public ResponseEntity<List<Produto>> getMaisVendidosMes(@RequestParam LocalDate data) {
         return ResponseEntity.ok(produtoService.getMaisVendidosMes(data));
+    }
+
+    @GetMapping("/vendas/grafico-mensal")
+    public ResponseEntity<GraficoVendasDto> getGraficoMensalVendas() {
+        return ResponseEntity.ok(vendaService.getGraficoMensalVendas());
     }
     
 }

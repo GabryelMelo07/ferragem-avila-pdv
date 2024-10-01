@@ -34,7 +34,10 @@ public class Item implements Serializable {
     private BigDecimal preco;
 
     @Column(nullable = false)
-    private BigDecimal precoUnitarioProduto;
+    private BigDecimal precoUnitarioAtual;
+    
+    @Column(nullable = false)
+    private BigDecimal precoFornecedorAtual;
 
     @ManyToOne
     @JoinColumn(name = "produto_id")
@@ -47,7 +50,8 @@ public class Item implements Serializable {
 
     public Item(Float quantidade, Produto produto, Venda venda) {
         this.quantidade = quantidade;
-        this.precoUnitarioProduto = produto.getPreco();
+        this.precoUnitarioAtual = produto.getPreco();
+        this.precoFornecedorAtual = produto.getPrecoFornecedor();
         this.produto = produto;
         this.venda = venda;
         calcularPrecoTotal();
