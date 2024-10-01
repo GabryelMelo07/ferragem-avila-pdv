@@ -7,6 +7,7 @@ import java.util.Optional;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
+import com.ferragem.avila.pdv.dto.GraficoVendasDto;
 import com.ferragem.avila.pdv.dto.ItemDto;
 import com.ferragem.avila.pdv.dto.VendaDto;
 import com.ferragem.avila.pdv.dto.VendedorDto;
@@ -22,6 +23,10 @@ public interface VendaService {
     Page<Venda> getBetweenDataConclusao(Pageable pageable, LocalDate dataInicio, LocalDate dataFim);
 
     List<Item> getItensFromVendaAtiva();
+    
+    GraficoVendasDto getGraficoMensalVendas();
+    
+    GraficoVendasDto getGraficoSemanalVendas();
 
     Venda save(Venda venda);
 
