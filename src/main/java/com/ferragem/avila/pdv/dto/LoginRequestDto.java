@@ -2,5 +2,7 @@ package com.ferragem.avila.pdv.dto;
 
 import com.ferragem.avila.pdv.annotation.ValidString;
 
-public record LoginRequestDto(@ValidString String username, @ValidString String password) {
+import io.swagger.v3.oas.annotations.media.Schema;
+
+public record LoginRequestDto(@Schema(description = "Nome de usuário", defaultValue = "admin") @ValidString String username, @Schema(description = "Senha do usuário", defaultValue = "123") @ValidString String password) {
 }
