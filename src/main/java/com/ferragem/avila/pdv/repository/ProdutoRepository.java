@@ -20,6 +20,10 @@ public interface ProdutoRepository extends JpaRepository<Produto, Long> {
 
     Page<Produto> findByAtivoFalse(Pageable pageable);
 
+    Optional<Produto> findByCodigoBarrasEAN13(String codigoBarras);
+
+    Optional<Produto> findByDescricao(String descricao);
+
     @Query("""
             SELECT DISTINCT p FROM Produto p
             WHERE
@@ -28,8 +32,6 @@ public interface ProdutoRepository extends JpaRepository<Produto, Long> {
                 OR (LOWER(p.descricao) LIKE LOWER(CONCAT('%', :parametro, '%')))
         """)
     Page<Produto> findByParametros(Pageable pageable, String parametro);
-
-    Produto findByCodigoBarrasEAN13(String codigoBarras);
 
     @Query("""
             SELECT i.produto, SUM(i.quantidade) as totalVendido

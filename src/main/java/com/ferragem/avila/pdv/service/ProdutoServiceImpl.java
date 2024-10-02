@@ -7,13 +7,12 @@ import java.io.Reader;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 
-import org.hibernate.exception.ConstraintViolationException;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
-import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.redis.core.RedisTemplate;
@@ -48,11 +47,12 @@ public class ProdutoServiceImpl implements ProdutoService {
 
     @Value("${xlsx.file.limit}")
     private Integer xlsxFileLimit;
-    
+
     @Value("${import-csv.redis.key}")
     private String importCsvRedisKey;
 
-    // Tópicos do sistema de Pub/Sub do Redis, para publicar mensagens que serão consumidas no frontend.
+    // Tópicos do sistema de Pub/Sub do Redis, para publicar mensagens que serão
+    // consumidas no frontend.
     private final String RELATORIO_GERAL_PRODUTOS_CHANNEL = "pdv:relatorio-produtos";
     private final String RESULTADO_UPLOAD_CSV_CHANNEL = "pdv:resultado-upload-csv";
 
@@ -79,7 +79,9 @@ public class ProdutoServiceImpl implements ProdutoService {
         List<Produto> produtos = produtoRepository.findByAtivoTrue();
 
         if (produtos.size() > xlsxFileLimit)
-            throw new RuntimeException("Arquivos de formato .xlsx suportam somente " + xlsxFileLimit + " linhas."); // Personalizar esta exception
+            throw new RuntimeException("Arquivos de formato .xlsx suportam somente " + xlsxFileLimit + " linhas."); // Personalizar
+                                                                                                                    // esta
+                                                                                                                    // exception
 
         if (produtos != null && !produtos.isEmpty()) {
             String produtosToJson = "";
@@ -92,7 +94,8 @@ public class ProdutoServiceImpl implements ProdutoService {
             }
 
             redisTemplate.opsForValue().set(relatorioKey, produtosToJson, 3, TimeUnit.HOURS);
-            redisTemplate.convertAndSend(RELATORIO_GERAL_PRODUTOS_CHANNEL, "Relatório de produtos Carregado com sucesso!");
+            redisTemplate.convertAndSend(RELATORIO_GERAL_PRODUTOS_CHANNEL,
+                    "Relatório de produtos Carregado com sucesso!");
         }
     }
 
@@ -121,7 +124,8 @@ public class ProdutoServiceImpl implements ProdutoService {
 
     @Override
     public Produto getByCodigoBarras(String codigoBarras) {
-        return produtoRepository.findByCodigoBarrasEAN13(codigoBarras);
+        return produtoRepository.findByCodigoBarrasEAN13(codigoBarras)
+                .orElseThrow(() -> new ProdutoNaoEncontradoException());
     }
 
     @Override
@@ -191,6 +195,26 @@ public class ProdutoServiceImpl implements ProdutoService {
         }
     }
 
+    private boolean ifProductAlreadyExistsUpdateIt(Produto p) {
+        Optional<Produto> productByCodBarras = produtoRepository.findByCodigoBarrasEAN13(p.getCodigoBarrasEAN13());
+        Optional<Produto> productByDescricao = produtoRepository.findByDescricao(p.getDescricao());
+
+        Produto produto = new Produto();
+
+        if (productByCodBarras.isPresent()) {
+            produto = productByCodBarras.get();
+        } else if (productByDescricao.isPresent()) {
+            produto = productByDescricao.get();
+        } else {
+            return false;
+        }
+
+        produto.sumEstoque(p.getEstoque());
+        produtoRepository.save(produto);
+
+        return true;
+    }
+
     @Async
     @Override
     @CacheEvict(value = "produtos_ativos", allEntries = true)
@@ -208,6 +232,11 @@ public class ProdutoServiceImpl implements ProdutoService {
                     pCsv.getPreco(),
                     pCsv.getCodigoBarrasEAN13());
 
+            if (ifProductAlreadyExistsUpdateIt(p)) {
+                resultado.somar();
+                continue;
+            }
+
             produtos.add(p);
         }
 
@@ -216,7 +245,7 @@ public class ProdutoServiceImpl implements ProdutoService {
                 produtoRepository.save(produto);
                 resultado.somar();
             } catch (Exception e) {
-                resultado.getProdutosComErro().add(new ProdutoComErro(produto.getDescricao(), produto.getCodigoBarrasEAN13(), tratarMensagemErro(e)));
+                resultado.getProdutosComErro().add(new ProdutoComErro(produto.getDescricao(), produto.getCodigoBarrasEAN13(), e.getMessage()));
             }
         }
 
@@ -226,7 +255,7 @@ public class ProdutoServiceImpl implements ProdutoService {
         } else {
             String resultadoJson = objectMapper.writeValueAsString(resultado);
             redisTemplate.opsForValue().set(importCsvRedisKey, resultadoJson, 3, TimeUnit.HOURS);
-            
+
             redisTemplate.convertAndSend(
                     RESULTADO_UPLOAD_CSV_CHANNEL,
                     String.format("""
@@ -235,29 +264,6 @@ public class ProdutoServiceImpl implements ProdutoService {
                             Produtos com erro: %d
                             """, resultado.getProdutosSalvos(), resultado.getProdutosComErro().size()));
         }
-    }
-
-    private String tratarMensagemErro(Exception e) {
-        String mensagemErro = "Erro ao inserir produto: ";
-                
-        if (e.getCause() instanceof ConstraintViolationException || e.getCause() instanceof DataIntegrityViolationException) {
-            String mensagemSQL = e.getCause().getMessage();
-
-            if (mensagemSQL.contains("produto_descricao_key")) {
-                mensagemErro += "Já existe um produto com esta descrição cadastrado.";
-            } else if (mensagemSQL.contains("produto_codigo_barrasean13_key")) {
-                mensagemErro += "Já existe um produto com este código de barras cadastrado.";
-            } else if (mensagemSQL.contains("produto_descricao_key") && mensagemSQL.contains("produto_codigo_barrasean13_key")) {
-                mensagemErro += "Já existe um produto com esta descrição e código de barras cadastrado.";
-            } else {
-                mensagemErro += "Algum campo deste produto já está cadastrado, entre em contato com o suporte.";
-            }
-
-        } else {
-            mensagemErro += "Erro desconhecido, entre em contato com o suporte.";
-        }
-
-        return mensagemErro;
     }
 
 }
