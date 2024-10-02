@@ -9,6 +9,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.web.multipart.MultipartFile;
 
 import com.ferragem.avila.pdv.dto.ProdutoDto;
+import com.ferragem.avila.pdv.dto.UpdateProdutoDto;
 import com.ferragem.avila.pdv.model.Produto;
 
 public interface ProdutoService {
@@ -34,7 +35,9 @@ public interface ProdutoService {
 
     void importarProdutosCsv(MultipartFile file) throws IOException;
     
-    Produto update(long id, ProdutoDto dto);
+    Produto update(long id, UpdateProdutoDto dto);
+    
+    Produto updateEstoque(long id, Float novoEstoque);
 
     void delete(long id);
 }
