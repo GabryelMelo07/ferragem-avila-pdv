@@ -24,6 +24,7 @@ import org.springframework.web.multipart.MultipartFile;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.ferragem.avila.pdv.dto.ProdutoDto;
+import com.ferragem.avila.pdv.dto.UpdateProdutoDto;
 import com.ferragem.avila.pdv.exceptions.CodigoBarrasInvalidoException;
 import com.ferragem.avila.pdv.exceptions.ProdutoNaoEncontradoException;
 import com.ferragem.avila.pdv.model.Produto;
@@ -150,17 +151,24 @@ public class ProdutoServiceImpl implements ProdutoService {
 
     @Override
     @CacheEvict(value = "produtos_ativos", allEntries = true)
-    public Produto update(long id, ProdutoDto dto) {
+    public Produto update(long id, UpdateProdutoDto dto) {
         if (!dto.codigoBarrasEAN13().matches("^\\d{13}$"))
             throw new CodigoBarrasInvalidoException();
 
         Produto p = getById(id);
         p.setDescricao(dto.descricao());
         p.setUnidadeMedida(dto.unidadeMedida());
-        p.setEstoque(dto.estoque());
         p.setPrecoFornecedor(dto.precoFornecedor());
         p.setPreco(dto.preco());
         p.setCodigoBarrasEAN13(dto.codigoBarrasEAN13());
+        return save(p);
+    }
+
+    @Override
+    @CacheEvict(value = "produtos_ativos", allEntries = true)
+    public Produto updateEstoque(long id, Float novoEstoque) {
+        Produto p = getById(id);
+        p.setEstoque(novoEstoque);
         return save(p);
     }
 
