@@ -20,6 +20,7 @@ import org.springframework.transaction.annotation.Transactional;
 import com.ferragem.avila.pdv.dto.GraficoVendasDto;
 import com.ferragem.avila.pdv.dto.ItemDto;
 import com.ferragem.avila.pdv.dto.VendaDto;
+import com.ferragem.avila.pdv.dto.VendasDiariasDto;
 import com.ferragem.avila.pdv.dto.VendedorDto;
 import com.ferragem.avila.pdv.exceptions.CodigoBarrasInvalidoException;
 import com.ferragem.avila.pdv.exceptions.ProdutoSemEstoqueException;
@@ -70,7 +71,7 @@ public class VendaServiceImpl implements VendaService {
         Venda venda = getVendaAtiva().orElseThrow(() -> new VendaInativaException());
         return venda.getItens();
     }
-    
+
     @Override
     public GraficoVendasDto getGraficoMensalVendas() {
         LocalDate dataAtual = LocalDate.now(ZoneId.of("America/Sao_Paulo"));
@@ -85,28 +86,33 @@ public class VendaServiceImpl implements VendaService {
     }
 
     private GraficoVendasDto getGraficoData(LocalDate dataAtual, LocalDate dataInicial, LocalDate dataFinal) {
-        int pagina = 0;
-        int tamanhoPagina = 1000;
-
-        Pageable pageable = PageRequest.of(pagina, tamanhoPagina);
-        Page<Venda> paginaVendas;
-
-        BigDecimal valorTotalVendas = BigDecimal.ZERO;
-        BigDecimal lucroTotalVendas = BigDecimal.ZERO;
-
-        do {
-            paginaVendas = vendaRepository.findByDataHoraConclusaoBetween(pageable, dataInicial, dataFinal);
-
-            for (Venda venda : paginaVendas.getContent()) {
-                valorTotalVendas = valorTotalVendas.add(venda.getPrecoTotal());
-                lucroTotalVendas = lucroTotalVendas.add(venda.calcularLucroTotal());
-            }
-
-            pageable = PageRequest.of(++pagina, tamanhoPagina);
-            
-        } while (paginaVendas.hasNext());
+        GraficoVendasDto graficoVendas = new GraficoVendasDto(dataAtual);
         
-        return new GraficoVendasDto(dataAtual, valorTotalVendas, lucroTotalVendas);
+        while (dataInicial.isBefore(dataFinal) || dataInicial.isEqual(dataFinal)) {
+            int pagina = 0;
+            int tamanhoPagina = 1000;
+            Pageable pageable = PageRequest.of(pagina, tamanhoPagina);
+            Page<Venda> paginaVendas;
+
+            BigDecimal valorTotalVendas = BigDecimal.ZERO;
+            BigDecimal lucroTotalVendas = BigDecimal.ZERO;
+
+            do {
+                paginaVendas = vendaRepository.findByDataHoraConclusaoBetween(pageable, dataInicial, dataInicial);
+
+                for (Venda venda : paginaVendas.getContent()) {
+                    valorTotalVendas = valorTotalVendas.add(venda.getPrecoTotal());
+                    lucroTotalVendas = lucroTotalVendas.add(venda.calcularLucroTotal());
+                }
+
+                pageable = PageRequest.of(++pagina, tamanhoPagina);
+            } while (paginaVendas.hasNext());
+
+            graficoVendas.getVendasDiarias().add(new VendasDiariasDto(dataInicial, valorTotalVendas, lucroTotalVendas));
+            dataInicial = dataInicial.plusDays(1);
+        }
+        
+        return graficoVendas;
     }
 
     @Override
@@ -264,7 +270,7 @@ public class VendaServiceImpl implements VendaService {
 
         if (dto.dataHoraConclusao().isBefore(venda.getDataHoraInicio()))
             throw new DateTimeException("A data de conclusão da venda não pode ser anterior a data de início.");
-        
+
         venda.setDataHoraConclusao(dto.dataHoraConclusao());
         venda.setFormaPagamento(dto.formaPagamento());
         venda.setConcluida(true);

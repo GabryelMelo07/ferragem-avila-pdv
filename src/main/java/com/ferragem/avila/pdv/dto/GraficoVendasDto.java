@@ -1,7 +1,18 @@
 package com.ferragem.avila.pdv.dto;
 
-import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.List;
 import java.time.LocalDate;
 
-public record GraficoVendasDto(LocalDate data, BigDecimal totalVendas, BigDecimal totalLucro) {
+import lombok.Data;
+
+@Data
+public class GraficoVendasDto {
+    private LocalDate data;
+    private List<VendasDiariasDto> vendasDiarias;
+
+    public GraficoVendasDto(LocalDate data) {
+        this.data = data;
+        this.vendasDiarias = new ArrayList<>();
+    }
 }
