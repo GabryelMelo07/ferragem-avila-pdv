@@ -14,7 +14,8 @@ import com.ferragem.avila.pdv.model.Produto;
 public interface ProdutoRepository extends JpaRepository<Produto, Long> {
     Optional<Produto> findByIdAndAtivoTrue(Long id);
     
-    ArrayList<Produto> findByAtivoTrue();
+    @Query("SELECT p FROM Produto p WHERE p.ativo = true ORDER BY p.id ASC")
+    ArrayList<Produto> findAllAtivosOrderedById();
     
     Page<Produto> findByAtivoTrue(Pageable pageable);
 

@@ -64,6 +64,36 @@
       "name": "import-csv.redis.key",
       "type": "java.lang.String",
       "description": "The redis key for the result of the import csv (saveFromCsv) method"
+    },
+    {
+      "name": "spring.cloud.aws.endpoint",
+      "type": "java.lang.String",
+      "description": "URL to the AWS S3 endpoint"
+    },
+    {
+      "name": "spring.cloud.aws.region.static",
+      "type": "java.lang.String",
+      "description": "The region of the AWS S3 buckets"
+    },
+    {
+      "name": "spring.cloud.aws.credentials.access-key",
+      "type": "java.lang.String",
+      "description": "The access key to AWS S3"
+    },
+    {
+      "name": "spring.cloud.aws.credentials.secret-key",
+      "type": "java.lang.String",
+      "description": "The secret key to AWS S3"
+    },
+    {
+      "name": "aws.images.bucket.name",
+      "type": "java.lang.String",
+      "description": "Name of the images bucket in AWS S3"
+    },
+    {
+      "name": "aws.reports.bucket.name",
+      "type": "java.lang.String",
+      "description": "Name of the reports bucket in AWS S3"
     }
   ]
 }
