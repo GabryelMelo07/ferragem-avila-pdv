@@ -20,7 +20,7 @@ import com.ferragem.avila.pdv.dto.VendedorDto;
 import com.ferragem.avila.pdv.model.Item;
 import com.ferragem.avila.pdv.model.Venda;
 import com.ferragem.avila.pdv.model.enums.VendaExclusaoResultado;
-import com.ferragem.avila.pdv.service.interfaces.VendaService;
+import com.ferragem.avila.pdv.service.VendaService;
 
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.PositiveOrZero;

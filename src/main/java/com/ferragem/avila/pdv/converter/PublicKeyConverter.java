@@ -2,6 +2,7 @@ package com.ferragem.avila.pdv.converter;
 
 import org.springframework.boot.context.properties.ConfigurationPropertiesBinding;
 import org.springframework.core.convert.converter.Converter;
+import org.springframework.lang.NonNull;
 import org.springframework.security.converter.RsaKeyConverters;
 import org.springframework.stereotype.Component;
 
@@ -12,7 +13,7 @@ import java.security.interfaces.RSAPublicKey;
 @ConfigurationPropertiesBinding
 public class PublicKeyConverter implements Converter<String, RSAPublicKey> {
     @Override
-    public RSAPublicKey convert(String from) {
+    public RSAPublicKey convert(@NonNull String from) {
         return RsaKeyConverters.x509().convert(new ByteArrayInputStream(from.getBytes()));
     }
 }

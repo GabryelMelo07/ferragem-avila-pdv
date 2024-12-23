@@ -43,7 +43,7 @@ import com.ferragem.avila.pdv.model.User;
 import com.ferragem.avila.pdv.repository.ResetPasswordRepository;
 import com.ferragem.avila.pdv.repository.RoleRepository;
 import com.ferragem.avila.pdv.repository.UserRepository;
-import com.ferragem.avila.pdv.service.interfaces.EmailService;
+import com.ferragem.avila.pdv.service.EmailService;
 
 import jakarta.mail.MessagingException;
 import jakarta.persistence.EntityNotFoundException;

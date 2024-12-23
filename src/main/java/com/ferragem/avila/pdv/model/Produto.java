@@ -53,6 +53,9 @@ public class Produto implements Serializable {
     @Column(nullable = false)
     private boolean ativo;
 
+    @Column()
+    private String imagem;
+
     @OneToMany(mappedBy = "produto")
     @JsonIgnore
     private List<Item> itens;
@@ -65,6 +68,18 @@ public class Produto implements Serializable {
         this.preco = dto.preco();
         this.codigoBarrasEAN13 = dto.codigoBarrasEAN13();
         this.ativo = true;
+        this.itens = new ArrayList<Item>();
+    }
+
+    public Produto(ProdutoDto dto, String imagemUrl) {
+        this.descricao = dto.descricao();
+        this.unidadeMedida = dto.unidadeMedida();
+        this.estoque = dto.estoque();
+        this.precoFornecedor = dto.precoFornecedor();
+        this.preco = dto.preco();
+        this.codigoBarrasEAN13 = dto.codigoBarrasEAN13();
+        this.ativo = true;
+        this.imagem = imagemUrl;
         this.itens = new ArrayList<Item>();
     }
 

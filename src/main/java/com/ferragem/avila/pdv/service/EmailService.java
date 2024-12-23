@@ -7,20 +7,19 @@ import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
 import com.ferragem.avila.pdv.dto.SendEmailDto;
-import com.ferragem.avila.pdv.service.interfaces.EmailService;
 
 import jakarta.mail.MessagingException;
 import jakarta.mail.internet.MimeMessage;
 
 @Service
-public class EmailServiceImpl implements EmailService {
+public class EmailService {
     
     private final JavaMailSender javaMailSender;
 
     @Value("${spring.mail.username}")
     private String from;
 
-    EmailServiceImpl(JavaMailSender javaMailSender) {
+    EmailService(JavaMailSender javaMailSender) {
         this.javaMailSender = javaMailSender;
     }
     

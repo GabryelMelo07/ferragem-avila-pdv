@@ -15,11 +15,11 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RequestPart;
@@ -33,7 +33,7 @@ import com.ferragem.avila.pdv.dto.ProdutoDto;
 import com.ferragem.avila.pdv.dto.UpdateProdutoDto;
 import com.ferragem.avila.pdv.model.Produto;
 import com.ferragem.avila.pdv.model.utils.ProdutosFromCsv;
-import com.ferragem.avila.pdv.service.interfaces.ProdutoService;
+import com.ferragem.avila.pdv.service.ProdutoService;
 
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.PositiveOrZero;
@@ -87,9 +87,12 @@ public class ProdutoController {
         return ResponseEntity.ok().body(produtoService.getById(id));
     }
 
-    @PostMapping
+    @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @PreAuthorize("hasAuthority('SCOPE_ADMIN')")
-    public ResponseEntity<Produto> save(@Valid @RequestBody ProdutoDto produtoDto) {
+    public ResponseEntity<Produto> save(@ModelAttribute ProdutoDto produtoDto) {
+        System.out.println("===================================");
+        System.out.println(produtoDto);
+        System.out.println("===================================");
         return ResponseEntity.ok().body(produtoService.save(produtoDto));
     }
 
@@ -129,9 +132,9 @@ public class ProdutoController {
         return ResponseEntity.internalServerError().build();
     }
     
-    @PutMapping("/{id}")
+    @PutMapping(path = "/{id}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @PreAuthorize("hasAuthority('SCOPE_ADMIN')")
-    public ResponseEntity<Produto> update(@PathVariable int id, @Valid @RequestBody UpdateProdutoDto produtoDto) {
+    public ResponseEntity<Produto> update(@PathVariable int id, @Valid @ModelAttribute UpdateProdutoDto produtoDto) {
         return ResponseEntity.ok().body(produtoService.update(id, produtoDto));
     }
 

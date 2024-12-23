@@ -26,12 +26,12 @@ import com.ferragem.avila.pdv.dto.ProdutoDto;
 import com.ferragem.avila.pdv.dto.UpdateProdutoDto;
 import com.ferragem.avila.pdv.exceptions.CodigoBarrasInvalidoException;
 import com.ferragem.avila.pdv.exceptions.ProdutoNaoEncontradoException;
+import com.ferragem.avila.pdv.exceptions.XlsxSizeLimitException;
 import com.ferragem.avila.pdv.model.Produto;
 import com.ferragem.avila.pdv.model.utils.CsvToProduto;
 import com.ferragem.avila.pdv.model.utils.ProdutoComErro;
 import com.ferragem.avila.pdv.model.utils.ProdutosFromCsv;
 import com.ferragem.avila.pdv.repository.ProdutoRepository;
-import com.ferragem.avila.pdv.service.interfaces.ProdutoService;
 import com.opencsv.bean.CsvToBean;
 import com.opencsv.bean.CsvToBeanBuilder;
 
@@ -39,9 +39,11 @@ import lombok.extern.slf4j.Slf4j;
 
 @Service
 @Slf4j
-public class ProdutoServiceImpl implements ProdutoService {
+public class ProdutoService {
 
     private final ProdutoRepository produtoRepository;
+    private final FileStorageService fileStorageService;
+    private final RelatorioService relatorioService;
     private final RedisTemplate<String, Object> redisTemplate;
     private final ObjectMapper objectMapper;
 
@@ -56,104 +58,97 @@ public class ProdutoServiceImpl implements ProdutoService {
     private final String RELATORIO_GERAL_PRODUTOS_CHANNEL = "pdv:relatorio-produtos";
     private final String RESULTADO_UPLOAD_CSV_CHANNEL = "pdv:resultado-upload-csv";
 
-    public ProdutoServiceImpl(ProdutoRepository produtoRepository, RedisTemplate<String, Object> redisTemplate,
+    public ProdutoService(ProdutoRepository produtoRepository, FileStorageService fileStorageService, RelatorioService relatorioService, RedisTemplate<String, Object> redisTemplate,
             ObjectMapper objectMapper) {
         this.produtoRepository = produtoRepository;
+        this.fileStorageService = fileStorageService;
+        this.relatorioService = relatorioService;
         this.redisTemplate = redisTemplate;
         this.objectMapper = objectMapper;
     }
 
     /**
      * Este método é responsável por carregar todos os registros da tabela produtos
-     * do banco de dados, inseri-los no Redis e avisar o front-end do término do
-     * processo
-     * via sistema de Pub/Sub do próprio Redis.
+     * do banco de dados, montar o relatório .xlsx e avisar o front-end do término do
+     * processo via sistema de Pub/Sub do próprio Redis.
      * 
      * Ele roda de forma assíncrona em uma thread separada.
      * 
      * @throws JsonProcessingException
      */
     @Async
-    @Override
-    public void gerarRelatorioGeral(String relatorioKey) {
-        List<Produto> produtos = produtoRepository.findByAtivoTrue();
+    public void gerarRelatorioProdutosGeral(String relatorioKey) {
+        List<Produto> produtos = produtoRepository.findAllAtivosOrderedById();
 
         if (produtos.size() > xlsxFileLimit)
-            throw new RuntimeException("Arquivos de formato .xlsx suportam somente " + xlsxFileLimit + " linhas."); // Personalizar
-                                                                                                                    // esta
-                                                                                                                    // exception
+            throw new XlsxSizeLimitException(xlsxFileLimit);
 
         if (produtos != null && !produtos.isEmpty()) {
-            String produtosToJson = "";
+            List<String> cabecalho = List.of("id", "descricao", "unidadeMedida", "estoque", "precoFornecedor", "preco", "codigoBarrasEAN13", "ativo", "imagem");
+            byte[] relatorio = relatorioService.gerarRelatorioProdutos(cabecalho, "Produtos", produtos);
+            String nomeRelatorio = fileStorageService.uploadReport(relatorio, "relatorio_produtos");
 
-            try {
-                produtosToJson = objectMapper.writeValueAsString(produtos);
-            } catch (JsonProcessingException e) {
-                log.error("Erro ao converter Objeto para String JSON: ", e);
-                e.printStackTrace();
-            }
-
-            redisTemplate.opsForValue().set(relatorioKey, produtosToJson, 3, TimeUnit.HOURS);
-            redisTemplate.convertAndSend(RELATORIO_GERAL_PRODUTOS_CHANNEL,
-                    "Relatório de produtos Carregado com sucesso!");
+            redisTemplate.opsForValue().set(relatorioKey, nomeRelatorio, 3, TimeUnit.HOURS);
+            redisTemplate.convertAndSend(RELATORIO_GERAL_PRODUTOS_CHANNEL, "Relatório de produtos gerado com sucesso!");
         }
     }
 
-    @Override
+    public byte[] getRelatorioGerado(String nomeRelatorio) {
+        return fileStorageService.downloadReport(nomeRelatorio);
+    }
+
     @Cacheable(value = "produtos_ativos", key = "'pagina_' + #pageable.pageNumber + '_' + #pageable.sort.toString()", unless = "#result == null or #result.isEmpty()")
     public Page<Produto> getAll(Pageable pageable) {
         return produtoRepository.findByAtivoTrue(pageable);
     }
 
-    @Override
     @Cacheable(value = "produtos_inativos", key = "'pagina_' + #pageable.pageNumber", unless = "#result == null or #result.isEmpty()")
     public Page<Produto> getAllInativos(Pageable pageable) {
         return produtoRepository.findByAtivoFalse(pageable);
     }
 
-    @Override
     public Page<Produto> findByParams(Pageable pageable, String parametro) {
         return produtoRepository.findByParametros(pageable, parametro);
     }
 
-    @Override
     public Produto getById(long id) {
         return produtoRepository.findByIdAndAtivoTrue(id)
                 .orElseThrow(() -> new ProdutoNaoEncontradoException("Produto não existe."));
     }
 
-    @Override
     public Produto getByCodigoBarras(String codigoBarras) {
         return produtoRepository.findByCodigoBarrasEAN13(codigoBarras)
                 .orElseThrow(() -> new ProdutoNaoEncontradoException());
     }
 
-    @Override
     public List<Produto> getMaisVendidosMes(LocalDate data) {
         return produtoRepository.getMaisVendidosMes(data.getMonthValue(), data.getYear());
     }
 
-    @Override
     public Page<Produto> getProdutosBaixoEstoque(Pageable pageable) {
         return produtoRepository.findProdutosComEstoqueBaixo(pageable);
     }
 
-    @Override
     public Produto save(Produto produto) {
         return produtoRepository.save(produto);
     }
 
-    @Override
     @CacheEvict(value = "produtos_ativos", allEntries = true)
     public Produto save(ProdutoDto dto) {
-        if (!dto.codigoBarrasEAN13().matches("^\\d{13}$"))
+        if (!dto.codigoBarrasEAN13().matches("^\\d{13}$")) {
             throw new CodigoBarrasInvalidoException();
+        }
 
-        Produto p = new Produto(dto);
+        String imgUrl = null;
+            
+        if (dto.imagem() != null) {
+            imgUrl = fileStorageService.uploadImage(dto.imagem());
+        }
+            
+        Produto p = new Produto(dto, imgUrl);
         return save(p);
     }
 
-    @Override
     @CacheEvict(value = "produtos_ativos", allEntries = true)
     public Produto update(long id, UpdateProdutoDto dto) {
         if (!dto.codigoBarrasEAN13().matches("^\\d{13}$"))
@@ -165,10 +160,18 @@ public class ProdutoServiceImpl implements ProdutoService {
         p.setPrecoFornecedor(dto.precoFornecedor());
         p.setPreco(dto.preco());
         p.setCodigoBarrasEAN13(dto.codigoBarrasEAN13());
+
+        String imgUrl = null;
+        
+        if (dto.imagem() != null) {
+            fileStorageService.deleteImage(p.getImagem());
+            imgUrl = fileStorageService.uploadImage(dto.imagem());
+            p.setImagem(imgUrl);
+        }
+        
         return save(p);
     }
 
-    @Override
     @CacheEvict(value = "produtos_ativos", allEntries = true)
     public Produto updateEstoque(long id, Float novoEstoque) {
         Produto p = getById(id);
@@ -176,7 +179,6 @@ public class ProdutoServiceImpl implements ProdutoService {
         return save(p);
     }
 
-    @Override
     @CacheEvict(value = { "produtos_ativos", "produtos_inativos" }, allEntries = true)
     public void delete(long id) {
         Produto p = getById(id);
@@ -216,7 +218,6 @@ public class ProdutoServiceImpl implements ProdutoService {
     }
 
     @Async
-    @Override
     @CacheEvict(value = "produtos_ativos", allEntries = true)
     public void importarProdutosCsv(MultipartFile file) throws IOException {
         List<CsvToProduto> produtosCsv = parseCsvFile(file);

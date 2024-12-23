@@ -7,16 +7,15 @@ import org.springframework.stereotype.Service;
 
 import com.ferragem.avila.pdv.model.Item;
 import com.ferragem.avila.pdv.repository.ItemRepository;
-import com.ferragem.avila.pdv.service.interfaces.ItemService;
 
 import jakarta.persistence.EntityNotFoundException;
 
 @Service
-public class ItemServiceImpl implements ItemService {
+public class ItemService {
 
     private final ItemRepository itemRepository;
 
-    public ItemServiceImpl(ItemRepository itemRepository) {
+    public ItemService(ItemRepository itemRepository) {
         this.itemRepository = itemRepository;
     }
 
@@ -24,27 +23,22 @@ public class ItemServiceImpl implements ItemService {
         return itemRepository.findById(id).orElseThrow(() -> new EntityNotFoundException("Item não encontrado."));
     }
     
-    @Override
     public Optional<Item> getItemByProdutoAndVendaId(long produtoId, long vendaId) {
         return itemRepository.getItemByProdutoAndVendaId(produtoId, vendaId);
     }
     
-    @Override
     public Item save(Item item) {
         return itemRepository.save(item);
     }
     
-    @Override
     public void saveAll(List<Item> item) {
         itemRepository.saveAll(item);
     }
 
-    @Override
     public void delete(Item item) {
         itemRepository.delete(item);
     }
         
-    @Override
     public void deleteAll(List<Item> itens) {
         itemRepository.deleteAll(itens);
     }
