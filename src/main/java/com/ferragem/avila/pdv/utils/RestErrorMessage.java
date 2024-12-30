@@ -1,4 +1,4 @@
-package com.ferragem.avila.pdv.model.utils;
+package com.ferragem.avila.pdv.utils;
 
 import java.time.LocalDateTime;
 
@@ -14,5 +14,12 @@ import lombok.Setter;
 public class RestErrorMessage {
     private LocalDateTime timestamp;
     private HttpStatus status;
+    private String detailedError;
     private String error;
+
+    public RestErrorMessage(LocalDateTime timestamp, HttpStatus status, String error) {
+        this.timestamp = timestamp;
+        this.status = status;
+        this.error = error;
+    }
 }
