@@ -37,6 +37,7 @@ import com.ferragem.avila.pdv.dto.ResetPassword;
 import com.ferragem.avila.pdv.dto.ResetPasswordRequest;
 import com.ferragem.avila.pdv.dto.SendEmailDto;
 import com.ferragem.avila.pdv.dto.UserResponseDto;
+import com.ferragem.avila.pdv.exceptions.JwtTokenValidationException;
 import com.ferragem.avila.pdv.model.ResetPasswordToken;
 import com.ferragem.avila.pdv.model.Role;
 import com.ferragem.avila.pdv.model.User;
@@ -44,7 +45,14 @@ import com.ferragem.avila.pdv.repository.ResetPasswordRepository;
 import com.ferragem.avila.pdv.repository.RoleRepository;
 import com.ferragem.avila.pdv.repository.UserRepository;
 import com.ferragem.avila.pdv.service.EmailService;
+import com.ferragem.avila.pdv.utils.EmailTemplate;
+import com.ferragem.avila.pdv.utils.api_responses_examples.AuthResponses;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.ExampleObject;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import jakarta.mail.MessagingException;
 import jakarta.persistence.EntityNotFoundException;
 import jakarta.validation.Valid;
@@ -83,6 +91,11 @@ public class AuthController {
         this.resetPasswordRepository = resetPasswordRepository;
     }
 
+    @Operation(summary = "Cadastrar novo usuário", description = "Este recurso só pode ser usado por usuários administradores e realiza o cadastro de um novo usuário")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "201", description = "Usuário cadastrado com sucesso", content = @Content(mediaType = "application/json")),
+            @ApiResponse(responseCode = "422", description = "Nome de usuário já existente no banco de dados", content = @Content(mediaType = "application/json")),
+    })
     @Transactional
     @PostMapping("/register")
     @PreAuthorize("hasAuthority('SCOPE_ADMIN')")
@@ -90,7 +103,8 @@ public class AuthController {
         var userFromDb = userRepository.findByUsername(dto.username());
 
         if (userFromDb.isPresent())
-            throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY);
+            throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY,
+                    "Nome de usuário já existente no banco de dados");
 
         Set<Role> roles = new HashSet<>();
 
@@ -105,9 +119,13 @@ public class AuthController {
                 dto.sobrenome(), roles);
 
         userRepository.save(user);
-        return ResponseEntity.ok().build();
+        return ResponseEntity.status(201).build();
     }
 
+    @Operation(summary = "Listar usuários", description = "Este recurso só pode ser usado por usuários administradores e lista todos usuários cadastrados no banco de dados")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Success", content = @Content(mediaType = "application/json", examples = @ExampleObject(value = AuthResponses.LISTAR_USUARIOS)))
+    })
     @GetMapping("/users")
     @PreAuthorize("hasAuthority('SCOPE_ADMIN')")
     public ResponseEntity<List<UserResponseDto>> listUsers() {
@@ -122,6 +140,13 @@ public class AuthController {
         return ResponseEntity.ok(users);
     }
 
+    @Operation(summary = "Logar usuário", description = "Este recurso realiza o login de um usuário devolvendo 2 tokens, um de acesso e outro para pegar outro token quando o de acesso expirar")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Success", content = @Content(mediaType = "application/json", examples = @ExampleObject(value = AuthResponses.LOGIN_SUCESSO))),
+            @ApiResponse(responseCode = "401", description = "Unauthorized - Usuário ou senha inválidos", content = @Content(mediaType = "application/json", examples = @ExampleObject(value = AuthResponses.LOGIN_FALHA))),
+            @ApiResponse(responseCode = "400", description = "Bad Request", content = @Content(mediaType = "application/json")),
+            @ApiResponse(responseCode = "500", description = "Internal Server Error", content = @Content(mediaType = "application/json"))
+    })
     @PostMapping("/login")
     public ResponseEntity<LoginResponseDto> login(@RequestBody LoginRequestDto loginRequest) {
         var user = userRepository.findByUsername(loginRequest.username());
@@ -162,10 +187,17 @@ public class AuthController {
         return ResponseEntity.ok(new LoginResponseDto(accessToken, refreshToken));
     }
 
+    @Operation(summary = "Solicitar troca de senha", description = "Este recurso cria uma solicitação de troca de senha e envia para o e-mail do usuário um link com um token no parâmetro da URL, para identificar e validar a troca de senha")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Success", content = @Content(mediaType = "application/json")),
+            @ApiResponse(responseCode = "404", description = "Not Found - Usuário não encontrado com o e-mail: string@email.com", content = @Content(mediaType = "application/json", examples = @ExampleObject(value = AuthResponses.RESET_PASSWORD_USER_NOT_FOUND))),
+            @ApiResponse(responseCode = "400", description = "Bad Request", content = @Content(mediaType = "application/json")),
+            @ApiResponse(responseCode = "500", description = "Internal Server Error", content = @Content(mediaType = "application/json"))
+    })
     @PostMapping("/reset-password/request")
     public ResponseEntity<Void> resetPasswordRequest(@RequestBody @Valid ResetPasswordRequest dto) {
         User user = userRepository.findByEmail(dto.email())
-                .orElseThrow(() -> new EntityNotFoundException("User not found with email: " + dto.email()));
+                .orElseThrow(() -> new EntityNotFoundException("Usuário não encontrado com o e-mail: " + dto.email()));
 
         UUID token = UUID.randomUUID();
 
@@ -176,20 +208,9 @@ public class AuthController {
         user.setResetPasswordToken(resetPasswordToken);
         userRepository.save(user);
 
-        String resetPassUrl = String.format("%s/auth/reset-password?userId=%s&token=%s", frontEndUrl, user.getId(),
-                token);
+        String resetPassUrl = String.format("%s/auth/reset-password?userId=%s&token=%s", frontEndUrl, user.getId(), token);
 
-        // TODO: Criar template de e-mail padronizado.
-        String body = String.format("""
-                <h1>Olá %s.</h1><br>
-                Recebemos uma solicitação de redefinição de senha para sua conta, clique no link abaixo para redefinir:
-                <br>
-                <a href="%s"><button>Redefinir Senha</button></a><br>
-                <small>Caso o botão não funcione, aperte neste link: %s</small>
-                <br>
-                <br>
-                <h4>Caso não tenha sido você que solicitou a troca de senha, desconsidere e exclua este e-mail.</h4>
-                """, user.getNome(), resetPassUrl, resetPassUrl);
+        String body = EmailTemplate.getResetPasswordTemplate(user.getNome(), resetPassUrl);
 
         try {
             emailService.sendEmailAsync(
@@ -201,10 +222,17 @@ public class AuthController {
         return ResponseEntity.ok().build();
     }
 
+    @Operation(summary = "Redefinir senha", description = "Este recurso redefine a senha do usuário a partir de um token previamente gerado por ele")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Success", content = @Content(mediaType = "application/json")),
+            @ApiResponse(responseCode = "404", description = "Not Found - Usuário não encontrado com o username: admin", content = @Content(mediaType = "application/json", examples = @ExampleObject(value = AuthResponses.RESET_PASSWORD_USER_NOT_FOUND))),
+            @ApiResponse(responseCode = "400", description = "Bad Request", content = @Content(mediaType = "application/json")),
+            @ApiResponse(responseCode = "500", description = "Internal Server Error", content = @Content(mediaType = "application/json"))
+    })
     @PostMapping("/reset-password")
     public ResponseEntity<Void> resetPassword(@RequestBody @Valid ResetPassword dto) {
         User user = userRepository.findById(UUID.fromString(dto.userId()))
-                .orElseThrow(() -> new EntityNotFoundException("User not found."));
+                .orElseThrow(() -> new EntityNotFoundException("Usuário não encontrado"));
 
         if (!user.getResetPasswordToken().getToken().toString().equals(dto.token()))
             throw new RuntimeException("Token inválido.");
@@ -216,17 +244,23 @@ public class AuthController {
         return ResponseEntity.ok().build();
     }
 
+    @Operation(summary = "Atualizar token de acesso", description = "Este recurso renova o 'access_token' e o 'refresh_token' permitindo que o usuário fique logado por mais tempo na aplicação")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Tokens renovados com sucesso", content = @Content(mediaType = "application/json", examples = @ExampleObject(value = AuthResponses.LOGIN_SUCESSO))),
+            @ApiResponse(responseCode = "400", description = "Bad Request", content = @Content(mediaType = "application/json")),
+            @ApiResponse(responseCode = "500", description = "Internal Server Error", content = @Content(mediaType = "application/json"))
+    })
     @PostMapping("/refresh-token")
     public ResponseEntity<LoginResponseDto> refreshToken(@RequestBody @Valid RefreshTokenRequestDto dto) {
         Jwt accessToken = jwtDecoder.decode(dto.accessToken());
         Jwt refreshToken = jwtDecoder.decode(dto.refreshToken());
 
         if (!refreshToken.getIssuer().equals(accessToken.getIssuer()))
-            throw new RuntimeException("Erro ao validar refresh token: Issuer diferente.");
+            throw new JwtTokenValidationException("Erro ao validar refresh token: Issuer diferente.");
         if (!refreshToken.getSubject().equals(accessToken.getSubject()))
-            throw new RuntimeException("Erro ao validar refresh token: Subject diferente.");
+            throw new JwtTokenValidationException("Erro ao validar refresh token: Subject diferente.");
         if (!refreshToken.getIssuedAt().equals(accessToken.getIssuedAt()))
-            throw new RuntimeException("Erro ao validar refresh token: Issued at diferente.");
+            throw new JwtTokenValidationException("Erro ao validar refresh token: Issued at diferente.");
 
         User usuario = userRepository.findById(UUID.fromString(accessToken.getSubject()))
                 .orElseThrow(() -> new EntityNotFoundException("Usuário não encontrado."));

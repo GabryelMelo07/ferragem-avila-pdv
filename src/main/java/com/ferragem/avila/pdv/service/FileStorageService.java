@@ -34,6 +34,8 @@ public class FileStorageService {
             return uploadedImg.getURL().toString();
         } catch (IOException ex) {
             throw new RuntimeException("Não foi possivel realizar o upload do documento", ex);
+        } catch (Exception ex) {
+            throw ex;
         }
     }
 
@@ -50,6 +52,8 @@ public class FileStorageService {
             return reportName;
         } catch (IOException ex) {
             throw new RuntimeException("Não foi possivel realizar o upload do documento", ex);
+        } catch (Exception ex) {
+            throw ex;
         }
     }
 
@@ -59,6 +63,8 @@ public class FileStorageService {
             return downloadedReport.getContentAsByteArray();
         } catch (IOException ex) {
             throw new RuntimeException("Erro ao baixar o relatório do S3", ex);
+        } catch (Exception ex) {
+            throw ex;
         }
     }
 

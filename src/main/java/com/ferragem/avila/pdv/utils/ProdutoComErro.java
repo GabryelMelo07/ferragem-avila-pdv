@@ -1,4 +1,4 @@
-package com.ferragem.avila.pdv.model.utils;
+package com.ferragem.avila.pdv.utils;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;

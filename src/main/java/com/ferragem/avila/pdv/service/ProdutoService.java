@@ -28,10 +28,10 @@ import com.ferragem.avila.pdv.exceptions.CodigoBarrasInvalidoException;
 import com.ferragem.avila.pdv.exceptions.ProdutoNaoEncontradoException;
 import com.ferragem.avila.pdv.exceptions.XlsxSizeLimitException;
 import com.ferragem.avila.pdv.model.Produto;
-import com.ferragem.avila.pdv.model.utils.CsvToProduto;
-import com.ferragem.avila.pdv.model.utils.ProdutoComErro;
-import com.ferragem.avila.pdv.model.utils.ProdutosFromCsv;
 import com.ferragem.avila.pdv.repository.ProdutoRepository;
+import com.ferragem.avila.pdv.utils.CsvToProduto;
+import com.ferragem.avila.pdv.utils.ProdutoComErro;
+import com.ferragem.avila.pdv.utils.ProdutosFromCsv;
 import com.opencsv.bean.CsvToBean;
 import com.opencsv.bean.CsvToBeanBuilder;
 
@@ -80,8 +80,9 @@ public class ProdutoService {
     public void gerarRelatorioProdutosGeral(String relatorioKey) {
         List<Produto> produtos = produtoRepository.findAllAtivosOrderedById();
 
-        if (produtos.size() > xlsxFileLimit)
+        if (produtos.size() > xlsxFileLimit) {
             throw new XlsxSizeLimitException(xlsxFileLimit);
+        }
 
         if (produtos != null && !produtos.isEmpty()) {
             List<String> cabecalho = List.of("id", "descricao", "unidadeMedida", "estoque", "precoFornecedor", "preco", "codigoBarrasEAN13", "ativo", "imagem");
@@ -132,6 +133,22 @@ public class ProdutoService {
     public Produto save(Produto produto) {
         return produtoRepository.save(produto);
     }
+    
+    private Produto save(Produto produto, MultipartFile imagem) {
+        String imagemUrl = produto.getImagem();
+        
+        if (imagemUrl == null) {
+            imagemUrl = fileStorageService.uploadImage(imagem);
+            produto.setImagem(imagemUrl);
+            return save(produto);
+        }
+
+        fileStorageService.deleteImage(imagemUrl);
+        imagemUrl = fileStorageService.uploadImage(imagem);
+        produto.setImagem(imagemUrl);
+
+        return save(produto);
+    }
 
     @CacheEvict(value = "produtos_ativos", allEntries = true)
     public Produto save(ProdutoDto dto) {
@@ -139,20 +156,19 @@ public class ProdutoService {
             throw new CodigoBarrasInvalidoException();
         }
 
-        String imgUrl = null;
-            
         if (dto.imagem() != null) {
-            imgUrl = fileStorageService.uploadImage(dto.imagem());
+            return save(new Produto(dto), dto.imagem());
         }
             
-        Produto p = new Produto(dto, imgUrl);
+        Produto p = new Produto(dto);
         return save(p);
     }
 
     @CacheEvict(value = "produtos_ativos", allEntries = true)
     public Produto update(long id, UpdateProdutoDto dto) {
-        if (!dto.codigoBarrasEAN13().matches("^\\d{13}$"))
+        if (!dto.codigoBarrasEAN13().matches("^\\d{13}$")) {
             throw new CodigoBarrasInvalidoException();
+        }
 
         Produto p = getById(id);
         p.setDescricao(dto.descricao());
@@ -161,12 +177,8 @@ public class ProdutoService {
         p.setPreco(dto.preco());
         p.setCodigoBarrasEAN13(dto.codigoBarrasEAN13());
 
-        String imgUrl = null;
-        
         if (dto.imagem() != null) {
-            fileStorageService.deleteImage(p.getImagem());
-            imgUrl = fileStorageService.uploadImage(dto.imagem());
-            p.setImagem(imgUrl);
+            return save(p, dto.imagem());
         }
         
         return save(p);
@@ -266,5 +278,5 @@ public class ProdutoService {
                             """, resultado.getProdutosSalvos(), resultado.getProdutosComErro().size()));
         }
     }
-
+        
 }
