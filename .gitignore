@@ -43,5 +43,7 @@ build/
 *.log
 *.gz
 
+.env
+
 # TODO List
 TODO.txt
