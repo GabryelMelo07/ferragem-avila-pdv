@@ -1,5 +1,6 @@
 package com.ferragem.avila.pdv.config;
 
+import java.util.Arrays;
 import java.util.Set;
 
 import org.springdoc.core.customizers.OpenApiCustomizer;
@@ -20,6 +21,7 @@ import io.swagger.v3.oas.models.media.MediaType;
 import io.swagger.v3.oas.models.responses.ApiResponse;
 import io.swagger.v3.oas.models.responses.ApiResponses;
 import io.swagger.v3.oas.models.security.SecurityRequirement;
+import io.swagger.v3.oas.models.servers.Server;
 
 @Configuration
 @SecurityScheme(name = "bearerAuth", type = SecuritySchemeType.HTTP, bearerFormat = "JWT", scheme = "bearer")
@@ -28,6 +30,10 @@ public class SwaggerConfig {
     @Bean
     OpenAPI customOpenApi() {
         return new OpenAPI()
+                .servers(Arrays.asList(
+                    new Server().url("https://api.ferragemavila.com.br").description("Servidor de Produção"),
+                    new Server().url("http://localhost:8080").description("Servidor Local")
+                ))
                 .components(new Components().addSecuritySchemes("bearerAuth",
                         new io.swagger.v3.oas.models.security.SecurityScheme()
                                 .type(io.swagger.v3.oas.models.security.SecurityScheme.Type.HTTP).scheme("bearer")
