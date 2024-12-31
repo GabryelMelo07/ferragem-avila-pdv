@@ -15,8 +15,7 @@
 	<name>pdv</name>
 	<description>Projeto de sistema para PDV de caixa de uma ferragem</description>
 	<properties>
-		<java.version>22</java.version>
-		<!-- <spring-cloud.version>2021.0.5</spring-cloud.version> -->
+		<java.version>23</java.version>
 		<spring.cloud-aws-starter-s3>3.1.1</spring.cloud-aws-starter-s3>
 	</properties>
 	<dependencies>
