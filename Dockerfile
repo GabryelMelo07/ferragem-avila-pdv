@@ -17,6 +17,6 @@ WORKDIR /backend
 
 EXPOSE 8081
 
-COPY --from=build /target/pdv-0.0.1-SNAPSHOT.jar app.jar
+COPY --from=build /backend/target/pdv-0.0.1-SNAPSHOT.jar app.jar
 
 ENTRYPOINT [ "java", "-jar", "app.jar" ]
