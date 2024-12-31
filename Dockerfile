@@ -1,6 +1,6 @@
-FROM openjdk:23-jdk-slim AS build
+FROM openjdk:22-jdk-slim AS build
 
-WORKDIR /app
+WORKDIR /backend
 
 RUN apt-get update && apt-get install -y maven && rm -rf /var/lib/apt/lists/*
 
@@ -11,9 +11,9 @@ RUN openssl rsa -pubout -in ./src/main/resources/app.key -out ./src/main/resourc
 
 RUN mvn clean install
 
-FROM openjdk:23-jdk-slim
+FROM openjdk:22-jdk-slim
 
-WORKDIR /app
+WORKDIR /backend
 
 EXPOSE 8081
 
