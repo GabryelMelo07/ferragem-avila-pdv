@@ -82,7 +82,7 @@ public class DashboardController {
             Na segunda vez em que o recurso for consumido (após a geração do relatório), ele irá buscar o relatório no Object Storage e disponibilizar o download.
             """)
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "102", description = "Processing", content = @Content(mediaType = "application/json", examples = @ExampleObject(value = "Gerando relatório"))),
+            @ApiResponse(responseCode = "202", description = "Processing", content = @Content(mediaType = "application/json", examples = @ExampleObject(value = "Gerando relatório"))),
             @ApiResponse(responseCode = "200", description = "Baixar relatório", content = @Content(mediaType = "application/octet-stream")),
     })
     @GetMapping("/produtos/relatorio-produtos")
@@ -98,7 +98,7 @@ public class DashboardController {
         }
 
         produtoService.gerarRelatorioProdutosGeral(RELATORIO_PRODUTOS_KEY);
-        return ResponseEntity.status(102).body("Gerando relatório");
+        return ResponseEntity.status(202).body("Gerando relatório");
     }
 
     @Operation(summary = "Buscar produtos com baixo estoque", description = """

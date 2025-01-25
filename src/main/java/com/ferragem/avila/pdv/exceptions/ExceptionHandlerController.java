@@ -57,8 +57,8 @@ public class ExceptionHandlerController extends ResponseEntityExceptionHandler {
         return buildResponse(HttpStatus.BAD_REQUEST, exception.getMessage());
     }
 
-    @ExceptionHandler(VendaInativaException.class)
-    private ResponseEntity<RestErrorMessage> produtoNotFoundHandler(VendaInativaException exception) {
+    @ExceptionHandler(VendaNotFoundException.class)
+    private ResponseEntity<RestErrorMessage> produtoNotFoundHandler(VendaNotFoundException exception) {
         return buildResponse(HttpStatus.BAD_REQUEST, exception.getMessage());
     }
 
@@ -115,6 +115,7 @@ public class ExceptionHandlerController extends ResponseEntityExceptionHandler {
 
     @ExceptionHandler(Exception.class)
     private ResponseEntity<RestErrorMessage> genericExceptionHandler(Exception exception) {
+        exception.printStackTrace();
         return buildResponse(HttpStatus.INTERNAL_SERVER_ERROR, exception.getMessage());
     }
 

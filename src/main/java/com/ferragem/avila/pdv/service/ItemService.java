@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.Optional;
 
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.ferragem.avila.pdv.model.Item;
 import com.ferragem.avila.pdv.repository.ItemRepository;
@@ -23,6 +24,7 @@ public class ItemService {
         return itemRepository.findById(id).orElseThrow(() -> new EntityNotFoundException("Item não encontrado."));
     }
     
+    @Transactional
     public Optional<Item> getItemByProdutoAndVendaId(long produtoId, long vendaId) {
         return itemRepository.getItemByProdutoAndVendaId(produtoId, vendaId);
     }

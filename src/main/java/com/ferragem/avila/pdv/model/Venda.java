@@ -6,6 +6,7 @@ import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 import com.ferragem.avila.pdv.model.enums.FormaPagamento;
@@ -23,14 +24,18 @@ import jakarta.persistence.OneToMany;
 import jakarta.persistence.OrderBy;
 import jakarta.persistence.Table;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
+import lombok.ToString.Include;
 
 @Data
 @Entity
 @Table(name = "venda")
 public class Venda implements Serializable {
-    
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @EqualsAndHashCode.Include
+    @Include
     private Long id;
 
     @Column(nullable = false)
@@ -38,7 +43,7 @@ public class Venda implements Serializable {
 
     @Column
     private LocalDateTime dataHoraConclusao;
-    
+
     @Column(nullable = false)
     private boolean concluida;
 
@@ -54,8 +59,8 @@ public class Venda implements Serializable {
 
     @Column(nullable = false)
     private String vendedorNome;
-    
-    @OneToMany(mappedBy = "venda", fetch = FetchType.EAGER, cascade = CascadeType.ALL)
+
+    @OneToMany(mappedBy = "venda", fetch = FetchType.EAGER, cascade = CascadeType.ALL, orphanRemoval = true)
     @OrderBy("id ASC")
     private List<Item> itens;
 
@@ -66,23 +71,40 @@ public class Venda implements Serializable {
         this.itens = new ArrayList<Item>();
     }
 
+    public Venda(UUID vendedorId, String vendedorNome) {
+        this();
+        this.vendedorId = vendedorId;
+        this.vendedorNome = vendedorNome;
+    }
+
     public void calcularPrecoTotal() {
         if (!this.itens.isEmpty()) {
             this.precoTotal = BigDecimal.ZERO;
-            
+
             for (Item item : this.itens) {
-               this.precoTotal = this.precoTotal.add(item.getPreco());
+                this.precoTotal = this.precoTotal.add(item.getPreco());
             }
         } else {
             this.precoTotal = BigDecimal.ZERO;
         }
     }
 
+    public Optional<Item> getItem(long idProduto) {
+        return itens.stream()
+                .filter(i -> i.getProduto().getId() == idProduto)
+                .findFirst();
+    }
+
+    public Item addItem(Item item) {
+        this.itens.add(item);
+        return item;
+    }
+
     public BigDecimal calcularLucroTotal() {
         return itens.stream()
-                    .map(item -> item.getPrecoUnitarioAtual().subtract(item.getPrecoFornecedorAtual())
-                    .multiply(BigDecimal.valueOf(item.getQuantidade())))
-                    .reduce(BigDecimal.ZERO, BigDecimal::add);
+                .map(item -> item.getPrecoUnitarioAtual().subtract(item.getPrecoFornecedorAtual())
+                        .multiply(BigDecimal.valueOf(item.getQuantidade())))
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
     }
 
 }

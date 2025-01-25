@@ -2,11 +2,9 @@ package com.ferragem.avila.pdv.model;
 
 import java.io.Serializable;
 import java.math.BigDecimal;
-import java.util.ArrayList;
-import java.util.List;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.ferragem.avila.pdv.dto.ProdutoDto;
+import com.ferragem.avila.pdv.exceptions.ProdutoSemEstoqueException;
 import com.ferragem.avila.pdv.model.enums.UnidadeMedida;
 
 import jakarta.persistence.Column;
@@ -16,10 +14,11 @@ import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
-import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
+import lombok.ToString.Include;
 
 @Data
 @NoArgsConstructor
@@ -29,6 +28,8 @@ public class Produto implements Serializable {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @EqualsAndHashCode.Include
+    @Include
     private Long id;
 
     @Column(length = 70, nullable = false, unique = true)
@@ -55,11 +56,7 @@ public class Produto implements Serializable {
 
     @Column()
     private String imagem;
-
-    @OneToMany(mappedBy = "produto")
-    @JsonIgnore
-    private List<Item> itens;
-
+    
     public Produto(ProdutoDto dto) {
         this.descricao = dto.descricao();
         this.unidadeMedida = dto.unidadeMedida();
@@ -68,7 +65,6 @@ public class Produto implements Serializable {
         this.preco = dto.preco();
         this.codigoBarrasEAN13 = dto.codigoBarrasEAN13();
         this.ativo = true;
-        this.itens = new ArrayList<Item>();
     }
 
     public Produto(ProdutoDto dto, String imagemUrl) {
@@ -80,7 +76,6 @@ public class Produto implements Serializable {
         this.codigoBarrasEAN13 = dto.codigoBarrasEAN13();
         this.ativo = true;
         this.imagem = imagemUrl;
-        this.itens = new ArrayList<Item>();
     }
 
     public Produto(String descricao, UnidadeMedida unidadeMedida, Float estoque, BigDecimal precoFornecedor,
@@ -92,7 +87,6 @@ public class Produto implements Serializable {
         this.preco = preco;
         this.codigoBarrasEAN13 = codigoBarrasEAN13;
         this.ativo = true;
-        this.itens = new ArrayList<Item>();
     }
 
     public void sumEstoque(float quantidade) {
@@ -100,6 +94,10 @@ public class Produto implements Serializable {
     }
 
     public void subtractEstoque(float quantidade) {
+        if (this.estoque - quantidade < 0) {
+            throw new ProdutoSemEstoqueException();
+        }
+
         this.estoque -= quantidade;
     }
     
