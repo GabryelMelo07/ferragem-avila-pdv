@@ -208,7 +208,7 @@ public class AuthController {
         user.setResetPasswordToken(resetPasswordToken);
         userRepository.save(user);
 
-        String resetPassUrl = String.format("%s/auth/reset-password?userId=%s&token=%s", frontEndUrl, user.getId(), token);
+        String resetPassUrl = String.format("%s/reset-password?userId=%s&token=%s", frontEndUrl, user.getId(), token);
 
         String body = EmailTemplate.getResetPasswordTemplate(user.getNome(), resetPassUrl);
 

@@ -24,7 +24,7 @@ import com.ferragem.avila.pdv.dto.VendasDiariasDto;
 import com.ferragem.avila.pdv.dto.VendedorDto;
 import com.ferragem.avila.pdv.exceptions.CodigoBarrasInvalidoException;
 import com.ferragem.avila.pdv.exceptions.ProdutoSemEstoqueException;
-import com.ferragem.avila.pdv.exceptions.VendaInativaException;
+import com.ferragem.avila.pdv.exceptions.VendaNotFoundException;
 import com.ferragem.avila.pdv.model.Item;
 import com.ferragem.avila.pdv.model.Produto;
 import com.ferragem.avila.pdv.model.Venda;
@@ -61,7 +61,7 @@ public class VendaService {
     }
 
     public List<Item> getItensFromVendaAtiva() {
-        Venda venda = getVendaAtiva().orElseThrow(() -> new VendaInativaException());
+        Venda venda = getVendaAtiva().orElseThrow(() -> new VendaNotFoundException());
         return venda.getItens();
     }
 
@@ -115,7 +115,7 @@ public class VendaService {
     }
 
     public void cancel() {
-        Venda venda = getVendaAtiva().orElseThrow(() -> new VendaInativaException());
+        Venda venda = getVendaAtiva().orElseThrow(() -> new VendaNotFoundException());
         List<Item> itens = venda.getItens();
 
         for (Item item : itens) {
@@ -154,48 +154,37 @@ public class VendaService {
         long produtoId = itemDto.produtoId();
         float itemQtd = itemDto.quantidade();
 
-        Optional<Venda> opVenda = getVendaAtiva();
-        Venda venda = new Venda();
+        Venda venda = getVendaAtiva().orElseGet(() -> {
+            Venda novaVenda = new Venda();
+            novaVenda.setVendedorId(vendedor.id());
+            novaVenda.setVendedorNome(vendedor.nome());
+            return save(novaVenda);
+        });
 
-        if (opVenda.isEmpty()) {
-            venda.setVendedorId(vendedor.id());
-            venda.setVendedorNome(vendedor.nome());
-            venda = save(venda);
-        } else {
-            venda = opVenda.get();
-        }
+        Produto produto = produtoService.getById(produtoId);            
 
-        Produto produto = produtoService.getById(produtoId);
-
-        if (produto.getEstoque() - itemQtd < 0)
-            throw new ProdutoSemEstoqueException();
-
-        Optional<Item> opItem = itemService.getItemByProdutoAndVendaId(produtoId, venda.getId());
-        Item item;
-
-        if (opItem.isPresent()) {
-            item = opItem.get();
+        if (venda.getItem(produtoId).isPresent()) {
+            Item item = venda.getItem(produtoId).get();
             item.sumQuantidade(itemQtd);
             item.calcularPrecoTotal();
         } else {
-            item = new Item(itemQtd, produto, venda);
+            Item item = new Item(itemQtd, produto, venda);
+            venda.addItem(item);
         }
-
+                    
         produto.subtractEstoque(itemQtd);
         produtoService.save(produto);
-
-        itemService.save(item);
-
-        venda.getItens().add(item);
         venda.calcularPrecoTotal();
-        return save(venda);
+        
+        return vendaRepository.save(venda);
     }
 
     public Venda addItem(String codigoBarras, VendedorDto vendedor) {
-        if (!codigoBarras.matches("^\\d{13}$"))
+        if (!codigoBarras.matches("^\\d{13}$")) {
             throw new CodigoBarrasInvalidoException();
+        }
 
-        return addItem(new ItemDto(1.0f, produtoService.getByCodigoBarras(codigoBarras).getId()), vendedor);
+        return addItem(new ItemDto(1.0f, produtoService.getIdByCodigoBarras(codigoBarras)), vendedor);
     }
 
     public Venda addItem(List<ItemDto> itensDto, VendedorDto vendedor) {
@@ -208,7 +197,7 @@ public class VendaService {
 
     @Transactional
     public Venda editItem(long itemId, float quantidade) {
-        Venda venda = getVendaAtiva().orElseThrow(() -> new VendaInativaException());
+        Venda venda = getVendaAtiva().orElseThrow(() -> new VendaNotFoundException());
         Item item = itemService.getById(itemId);
         Produto produto = item.getProduto();
 
@@ -227,12 +216,11 @@ public class VendaService {
         venda.calcularPrecoTotal();
 
         produtoService.save(produto);
-        itemService.save(item);
         return save(venda);
     }
 
     public Venda removeItem(long itemId) {
-        Venda venda = getVendaAtiva().orElseThrow(() -> new VendaInativaException());
+        Venda venda = getVendaAtiva().orElseThrow(() -> new VendaNotFoundException());
         Item item = itemService.getById(itemId);
         Produto produto = item.getProduto();
 
@@ -247,7 +235,7 @@ public class VendaService {
 
     @CacheEvict(value = { "vendas", "vendas_between_datas", "produtos_ativos" }, allEntries = true)
     public void concluirVenda(VendaDto dto) {
-        Venda venda = getVendaAtiva().orElseThrow(() -> new VendaInativaException());
+        Venda venda = getVendaAtiva().orElseThrow(() -> new VendaNotFoundException());
 
         if (dto.dataHoraConclusao().isBefore(venda.getDataHoraInicio()))
             throw new DateTimeException("A data de conclusão da venda não pode ser anterior a data de início.");

@@ -25,6 +25,9 @@ public interface ProdutoRepository extends JpaRepository<Produto, Long> {
 
     Optional<Produto> findByDescricao(String descricao);
 
+    @Query("SELECT p FROM Produto p WHERE p.estoque <= 10")
+    Page<Produto> findProdutosComEstoqueBaixo(Pageable pageable);
+
     @Query("""
             SELECT DISTINCT p FROM Produto p
             WHERE
@@ -46,6 +49,7 @@ public interface ProdutoRepository extends JpaRepository<Produto, Long> {
         """)
     List<Produto> getMaisVendidosMes(int mes, int ano);
 
-    @Query("SELECT p FROM Produto p WHERE p.estoque <= 10")
-    Page<Produto> findProdutosComEstoqueBaixo(Pageable pageable);
+    @Query("SELECT p.id FROM Produto p WHERE p.codigoBarrasEAN13 = :codigoBarras")
+    Long getIdByCodigoBarras(String codigoBarras);
+        
 }

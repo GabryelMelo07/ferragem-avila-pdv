@@ -6,6 +6,7 @@ import java.math.BigDecimal;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.ferragem.avila.pdv.model.enums.UnidadeMedida;
 
+import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
@@ -15,7 +16,9 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
+import lombok.ToString.Include;
 
 @Data
 @NoArgsConstructor
@@ -25,6 +28,8 @@ public class Item implements Serializable {
     
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @EqualsAndHashCode.Include
+    @Include
     private Long id;
 
     @Column(nullable = false)
@@ -39,7 +44,7 @@ public class Item implements Serializable {
     @Column(nullable = false)
     private BigDecimal precoFornecedorAtual;
 
-    @ManyToOne
+    @ManyToOne(cascade = CascadeType.PERSIST)
     @JoinColumn(name = "produto_id")
     private Produto produto;
 

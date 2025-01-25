@@ -18,6 +18,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -112,14 +113,20 @@ public class ProdutoService {
         return produtoRepository.findByParametros(pageable, parametro);
     }
 
+    @Transactional
     public Produto getById(long id) {
         return produtoRepository.findByIdAndAtivoTrue(id)
                 .orElseThrow(() -> new ProdutoNaoEncontradoException("Produto não existe."));
     }
 
-    public Produto getByCodigoBarras(String codigoBarras) {
-        return produtoRepository.findByCodigoBarrasEAN13(codigoBarras)
-                .orElseThrow(() -> new ProdutoNaoEncontradoException());
+    public Long getIdByCodigoBarras(String codigoBarras) {
+        Long produtoId = produtoRepository.getIdByCodigoBarras(codigoBarras);
+
+        if (produtoId == null) {
+            throw new ProdutoNaoEncontradoException();
+        }
+        
+        return produtoId;
     }
 
     public List<Produto> getMaisVendidosMes(LocalDate data) {
