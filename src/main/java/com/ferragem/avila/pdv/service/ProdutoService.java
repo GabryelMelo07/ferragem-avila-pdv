@@ -30,9 +30,9 @@ import com.ferragem.avila.pdv.exceptions.ProdutoNaoEncontradoException;
 import com.ferragem.avila.pdv.exceptions.XlsxSizeLimitException;
 import com.ferragem.avila.pdv.model.Produto;
 import com.ferragem.avila.pdv.repository.ProdutoRepository;
-import com.ferragem.avila.pdv.utils.CsvToProduto;
-import com.ferragem.avila.pdv.utils.ProdutoComErro;
-import com.ferragem.avila.pdv.utils.ProdutosFromCsv;
+import com.ferragem.avila.pdv.utils.csv_product_conversion.CsvToProduto;
+import com.ferragem.avila.pdv.utils.csv_product_conversion.ProdutoComErro;
+import com.ferragem.avila.pdv.utils.csv_product_conversion.ProdutosFromCsv;
 import com.opencsv.bean.CsvToBean;
 import com.opencsv.bean.CsvToBeanBuilder;
 

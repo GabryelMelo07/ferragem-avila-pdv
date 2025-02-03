@@ -2,7 +2,6 @@ package com.ferragem.avila.pdv.validator;
 
 import java.util.List;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.oauth2.core.OAuth2Error;
 import org.springframework.security.oauth2.core.OAuth2TokenValidator;
 import org.springframework.security.oauth2.core.OAuth2TokenValidatorResult;
@@ -15,8 +14,11 @@ import com.ferragem.avila.pdv.repository.RoleRepository;
 @Component
 public class ScopeValidator implements OAuth2TokenValidator<Jwt> {
 
-    @Autowired
-    private RoleRepository roleRepository;
+    private final RoleRepository roleRepository;
+
+    public ScopeValidator(RoleRepository roleRepository) {
+        this.roleRepository = roleRepository;
+    }
     
     @Override
     public OAuth2TokenValidatorResult validate(Jwt token) {

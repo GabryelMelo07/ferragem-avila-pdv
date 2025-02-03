@@ -1,4 +1,4 @@
-package com.ferragem.avila.pdv.utils;
+package com.ferragem.avila.pdv.utils.csv_product_conversion;
 
 import java.util.ArrayList;
 import java.util.List;

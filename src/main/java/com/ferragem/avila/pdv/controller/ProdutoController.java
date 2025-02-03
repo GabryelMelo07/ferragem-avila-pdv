@@ -33,8 +33,8 @@ import com.ferragem.avila.pdv.dto.ProdutoDto;
 import com.ferragem.avila.pdv.dto.UpdateProdutoDto;
 import com.ferragem.avila.pdv.model.Produto;
 import com.ferragem.avila.pdv.service.ProdutoService;
-import com.ferragem.avila.pdv.utils.ProdutosFromCsv;
 import com.ferragem.avila.pdv.utils.api_responses_examples.ProdutoResponses;
+import com.ferragem.avila.pdv.utils.csv_product_conversion.ProdutosFromCsv;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
