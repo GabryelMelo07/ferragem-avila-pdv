@@ -27,60 +27,63 @@ import io.swagger.v3.oas.models.servers.Server;
 @SecurityScheme(name = "bearerAuth", type = SecuritySchemeType.HTTP, bearerFormat = "JWT", scheme = "bearer")
 public class SwaggerConfig {
 
-    @Bean
-    OpenAPI customOpenApi() {
-        return new OpenAPI()
-                .servers(Arrays.asList(
-                    new Server().url("https://api.ferragemavila.com.br").description("Servidor de Produção"),
-                    new Server().url("http://localhost:8080").description("Servidor Local")
-                ))
-                .components(new Components().addSecuritySchemes("bearerAuth",
-                        new io.swagger.v3.oas.models.security.SecurityScheme()
-                                .type(io.swagger.v3.oas.models.security.SecurityScheme.Type.HTTP).scheme("bearer")
-                                .bearerFormat("JWT")))
-                .addSecurityItem(new SecurityRequirement().addList("bearerAuth"))
-                .info(new Info()
-                        .title("Sistema PDV - Ferragem Ávila")
-                        .version("v1")
-                        .description("APIs REST para gerenciamento e monitoramento de vendas e controle de estoque.")
-                        .termsOfService("")
-                        .license(new License().name("MIT License")
-                                .url("https://github.com/GabryelMelo07/ferragem-avila-pdv/blob/master/LICENSE")));
-    }
+	@Bean
+	OpenAPI customOpenApi() {
+		return new OpenAPI()
+				.servers(Arrays.asList(
+						new Server().url("https://api.ferragemavila.com.br").description("Servidor de Produção"),
+						new Server().url("http://localhost:8080").description("Servidor Local")))
+				.components(new Components().addSecuritySchemes("bearerAuth",
+						new io.swagger.v3.oas.models.security.SecurityScheme()
+								.type(io.swagger.v3.oas.models.security.SecurityScheme.Type.HTTP).scheme("bearer")
+								.bearerFormat("JWT")))
+				.addSecurityItem(new SecurityRequirement().addList("bearerAuth"))
+				.info(new Info()
+						.title("Sistema PDV - Ferragem Ávila")
+						.version("v1")
+						.description("APIs REST para gerenciamento e monitoramento de vendas e controle de estoque.")
+						.termsOfService("")
+						.license(new License().name("MIT License")
+								.url("https://github.com/GabryelMelo07/ferragem-avila-pdv/blob/master/LICENSE")));
+	}
 
-    @Bean
-    OpenApiCustomizer globalApiResponsesCustomizer() {
-        Set<String> endpointsPublicos = Set.of(
-            "/auth/login",
-            "/auth/reset-password",
-            "/auth/reset-password/request",
-            "/auth/refresh-token",
-            "/swagger-ui/**",
-            "/v3/api-docs/**"
-        );
-        
-        return openApi -> openApi.getPaths().forEach((path, pathItem) -> 
-            pathItem.readOperations().forEach(operation -> {
-                if (endpointsPublicos.contains(path)) {
-                    return;
-                }
+	@Bean
+	OpenApiCustomizer globalApiResponsesCustomizer() {
+		Set<String> endpointsPublicos = Set.of(
+				"/auth/login",
+				"/auth/reset-password",
+				"/auth/reset-password/request",
+				"/auth/refresh-token",
+				"/swagger-ui/**",
+				"/v3/api-docs/**");
 
-                ApiResponses responses = operation.getResponses();
-                responses.addApiResponse("400", new ApiResponse().description("Bad Request").content(new Content().addMediaType("application/json", new MediaType())));
-                responses.addApiResponse("401", new ApiResponse().description("Unauthorized - Necessário autenticação").content(new Content().addMediaType("application/json", new MediaType())));
-                responses.addApiResponse("403", new ApiResponse().description("Forbidden - Sem permissão para acessar este recurso").content(new Content().addMediaType("application/json", new MediaType())));
-                responses.addApiResponse("500", new ApiResponse().description("Internal Server Error").content(new Content().addMediaType("application/json", new MediaType())));
-            })
-        );
-    }
+		return openApi -> openApi.getPaths()
+				.forEach((path, pathItem) -> pathItem.readOperations().forEach(operation -> {
+					if (endpointsPublicos.contains(path)) {
+						return;
+					}
 
-    @Bean
-    @Primary
-    SwaggerUiConfigProperties swaggerUiConfigProperties() {
-        SwaggerUiConfigProperties swaggerUiConfig = new SwaggerUiConfigProperties();
-        swaggerUiConfig.setDefaultModelExpandDepth(-1);
-        swaggerUiConfig.setDocExpansion("none");
-        return swaggerUiConfig;
-    }
+					ApiResponses responses = operation.getResponses();
+					responses.addApiResponse("400", new ApiResponse().description("Bad Request")
+							.content(new Content().addMediaType("application/json", new MediaType())));
+					responses.addApiResponse("401",
+							new ApiResponse().description("Unauthorized - Necessário autenticação")
+									.content(new Content().addMediaType("application/json", new MediaType())));
+					responses.addApiResponse("403",
+							new ApiResponse().description("Forbidden - Sem permissão para acessar este recurso")
+									.content(new Content().addMediaType("application/json", new MediaType())));
+					responses.addApiResponse("500", new ApiResponse().description("Internal Server Error")
+							.content(new Content().addMediaType("application/json", new MediaType())));
+				}));
+	}
+
+	@Bean
+	@Primary
+	SwaggerUiConfigProperties swaggerUiConfigProperties() {
+		SwaggerUiConfigProperties swaggerUiConfig = new SwaggerUiConfigProperties();
+		swaggerUiConfig.setDefaultModelExpandDepth(-1);
+		swaggerUiConfig.setDocExpansion("none");
+		return swaggerUiConfig;
+	}
 
 }

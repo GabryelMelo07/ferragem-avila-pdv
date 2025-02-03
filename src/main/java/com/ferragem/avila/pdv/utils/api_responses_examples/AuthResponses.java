@@ -36,7 +36,7 @@ public class AuthResponses {
         {
             "timestamp": "2024-12-26T22:46:28.3192063",
             "status": "NOT_FOUND",
-            "error": "Usuário não encontrado com o e-mail: string@gmail.com"
+            "error": "Usuário não encontrado"
         }
     """;
     
