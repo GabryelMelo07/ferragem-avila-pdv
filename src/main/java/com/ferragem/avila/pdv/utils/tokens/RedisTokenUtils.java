@@ -28,7 +28,8 @@ public class RedisTokenUtils {
 	}
 
 	public Optional<String> getJweStoredToken(String userId) {
-		return Optional.ofNullable((redisUtils.getValue(userId)));
+		String storedToken = String.valueOf(redisUtils.getValue(userId));
+		return Optional.ofNullable((storedToken));
 	}
 
     public void revokeToken(String token, Instant expirationTime) {
