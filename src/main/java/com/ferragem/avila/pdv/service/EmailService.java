@@ -6,7 +6,7 @@ import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
-import com.ferragem.avila.pdv.dto.SendEmailDto;
+import com.ferragem.avila.pdv.dto.auth.SendEmailDto;
 
 import jakarta.mail.MessagingException;
 import jakarta.mail.internet.MimeMessage;

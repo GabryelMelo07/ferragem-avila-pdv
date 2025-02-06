@@ -1,4 +1,4 @@
-package com.ferragem.avila.pdv.dto;
+package com.ferragem.avila.pdv.dto.venda;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;

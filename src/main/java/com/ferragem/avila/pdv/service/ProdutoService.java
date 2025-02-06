@@ -4,11 +4,13 @@ import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.Reader;
+import java.math.BigDecimal;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 
@@ -18,24 +20,26 @@ import org.springframework.cache.annotation.Cacheable;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.ferragem.avila.pdv.dto.ProdutoDto;
-import com.ferragem.avila.pdv.dto.UpdateProdutoDto;
+import com.ferragem.avila.pdv.dto.produto.ProdutoDto;
+import com.ferragem.avila.pdv.dto.produto.UpdateProdutoDto;
 import com.ferragem.avila.pdv.exceptions.CodigoBarrasInvalidoException;
 import com.ferragem.avila.pdv.exceptions.ProdutoNaoEncontradoException;
 import com.ferragem.avila.pdv.exceptions.XlsxSizeLimitException;
 import com.ferragem.avila.pdv.model.Produto;
+import com.ferragem.avila.pdv.model.enums.UnidadeMedida;
 import com.ferragem.avila.pdv.repository.ProdutoRepository;
-import com.ferragem.avila.pdv.utils.csv_product_conversion.CsvToProduto;
-import com.ferragem.avila.pdv.utils.csv_product_conversion.ProdutoComErro;
-import com.ferragem.avila.pdv.utils.csv_product_conversion.ProdutosFromCsv;
+import com.ferragem.avila.pdv.utils.product_conversion.RedisProductUtils;
+import com.ferragem.avila.pdv.utils.product_conversion.csv.CsvToProduto;
+import com.ferragem.avila.pdv.utils.product_conversion.csv.ProdutoComErro;
+import com.ferragem.avila.pdv.utils.product_conversion.csv.ProdutosImportados;
+import com.ferragem.avila.pdv.utils.product_conversion.xml.Det;
+import com.ferragem.avila.pdv.utils.product_conversion.xml.ProductFromXML;
 import com.opencsv.bean.CsvToBean;
 import com.opencsv.bean.CsvToBeanBuilder;
 
@@ -44,32 +48,33 @@ import lombok.extern.slf4j.Slf4j;
 @Service
 @Slf4j
 public class ProdutoService {
-
 	private final ProdutoRepository produtoRepository;
 	private final FileStorageService fileStorageService;
 	private final RelatorioService relatorioService;
-	private final RedisTemplate<String, Object> redisTemplate;
-	private final ObjectMapper objectMapper;
-
-	@Value("${xlsx.file.limit}")
-	private Integer xlsxFileLimit;
-
-	@Value("${import-csv.redis.key}")
-	private String importCsvRedisKey;
+	private final RedisProductUtils redisProductUtils;
+	private final NfeApiService nfeApiService;
+	private final Integer xlsxFileLimit;
+	private final String importProductsByCsvRedisKey;
+	private final String importProductsByXmlRedisKey;
 
 	// Tópicos do sistema de Pub/Sub do Redis, para publicar mensagens que serão
 	// consumidas no frontend.
-	private final String RELATORIO_GERAL_PRODUTOS_CHANNEL = "pdv:relatorio-produtos";
-	private final String RESULTADO_UPLOAD_CSV_CHANNEL = "pdv:resultado-upload-csv";
+	private final String ALL_PRODUCTS_REPORT_CHANNEL = "pdv:all-products-report";
+	private final String IMPORT_PRODUCTS_RESULT_CHANNEL = "pdv:import-products-result";
 
 	public ProdutoService(ProdutoRepository produtoRepository, FileStorageService fileStorageService,
-			RelatorioService relatorioService, RedisTemplate<String, Object> redisTemplate,
-			ObjectMapper objectMapper) {
+			RelatorioService relatorioService, RedisProductUtils redisProductUtils, NfeApiService nfeApiService,
+			@Value("${xlsx.file.limit}") Integer xlsxFileLimit,
+			@Value("${import-csv.redis.key}") String importProductsByCsvRedisKey,
+			@Value("${import-xml.redis.key}") String importProductsByXmlRedisKey) {
 		this.produtoRepository = produtoRepository;
 		this.fileStorageService = fileStorageService;
 		this.relatorioService = relatorioService;
-		this.redisTemplate = redisTemplate;
-		this.objectMapper = objectMapper;
+		this.redisProductUtils = redisProductUtils;
+		this.nfeApiService = nfeApiService;
+		this.xlsxFileLimit = xlsxFileLimit;
+		this.importProductsByCsvRedisKey = importProductsByCsvRedisKey;
+		this.importProductsByXmlRedisKey = importProductsByXmlRedisKey;
 	}
 
 	/**
@@ -96,8 +101,8 @@ public class ProdutoService {
 			byte[] relatorio = relatorioService.gerarRelatorioProdutos(cabecalho, "Produtos", produtos);
 			String nomeRelatorio = fileStorageService.uploadReport(relatorio, "relatorio_produtos");
 
-			redisTemplate.opsForValue().set(relatorioKey, nomeRelatorio, 3, TimeUnit.HOURS);
-			redisTemplate.convertAndSend(RELATORIO_GERAL_PRODUTOS_CHANNEL, "Relatório de produtos gerado com sucesso!");
+			redisProductUtils.storeValueAndSendMessage(relatorioKey, nomeRelatorio, 3, TimeUnit.HOURS,
+					ALL_PRODUCTS_REPORT_CHANNEL, "Relatório de produtos gerado com sucesso!");
 		}
 	}
 
@@ -211,6 +216,75 @@ public class ProdutoService {
 		save(p);
 	}
 
+	public void restoreStock(Produto produto, float estoque) {
+		produto.sumEstoque(estoque);
+		produtoRepository.save(produto);
+	}
+
+	@Async
+	@CacheEvict(value = "produtos_ativos", allEntries = true)
+	public void importarProdutosViaCsv(String filePath) throws IOException {
+		List<CsvToProduto> produtosCsv = parseCsvFile(filePath);
+		List<Produto> produtos = new ArrayList<>();
+
+		for (CsvToProduto pCsv : produtosCsv) {
+			Produto p = new Produto(
+					pCsv.getDescricao(),
+					pCsv.getUnidadeMedida(),
+					pCsv.getEstoque(),
+					pCsv.getPrecoFornecedor(),
+					pCsv.getPreco(),
+					pCsv.getCodigoBarrasEAN13());
+			produtos.add(p);
+		}
+
+		importProducts(produtos, "CSV");
+		Files.deleteIfExists(Path.of(filePath));
+	}
+
+	@Async
+	@CacheEvict(value = "produtos_ativos", allEntries = true)
+	public void importarProdutosViaXml(String chaveAcessoNfe, double porcentagemAumentoPreco) {
+		List<Det> produtosXml = nfeApiService.getNfeXml(chaveAcessoNfe);
+		List<Produto> produtos = new ArrayList<>();
+
+		System.out.println("""
+				*********************************************
+				REQUEST RESULT: %s
+				*********************************************
+				""".formatted(produtosXml));
+
+		Map<String, UnidadeMedida> unidadeMap = Map.of(
+				"UN", UnidadeMedida.UNIDADE,
+				"KG", UnidadeMedida.GRAMA,
+				"MT", UnidadeMedida.METRO);
+
+		for (Det det : produtosXml) {
+			ProductFromXML productFromXML = det.getProd();
+			System.out.println("""
+				*********************************************
+				PRODUCT FROM XML: %s
+				*********************************************
+				""".formatted(productFromXML));
+			BigDecimal precoFornecedor = productFromXML.getVUnCom();
+
+			Produto p = new Produto();
+			p.setDescricao(productFromXML.getXProd());
+			p.setUnidadeMedida(unidadeMap.getOrDefault(productFromXML.getUCom(), UnidadeMedida.UNIDADE));
+			p.setEstoque(productFromXML.getQCom());
+			p.setPrecoFornecedor(precoFornecedor);
+			p.setCodigoBarrasEAN13(productFromXML.getCEAN());
+
+			BigDecimal aumento = BigDecimal.valueOf(1 + (porcentagemAumentoPreco / 100));
+			BigDecimal preco = precoFornecedor.multiply(aumento);
+			p.setPreco(preco);
+
+			produtos.add(p);
+		}
+
+		importProducts(produtos, "XML");
+	}
+
 	private List<CsvToProduto> parseCsvFile(String filePath) throws IOException {
 		try (Reader reader = new BufferedReader(new FileReader(filePath))) {
 			CsvToBean<CsvToProduto> csvToBean = new CsvToBeanBuilder<CsvToProduto>(reader)
@@ -223,89 +297,80 @@ public class ProdutoService {
 	}
 
 	private boolean ifProductAlreadyExistsUpdateIt(Produto p) {
-		Optional<Produto> productByCodBarras = produtoRepository.findByCodigoBarrasEAN13(p.getCodigoBarrasEAN13());
-		Optional<Produto> productByDescricao = produtoRepository.findByDescricao(p.getDescricao());
+		String codigoBarrasEan13 = p.getCodigoBarrasEAN13();
 
-		Produto produto = new Produto();
+		Optional<Produto> productByCodBarras = Optional.empty();
+		Optional<Produto> productByDescricao = produtoRepository.findByDescricao(p.getDescricao());
+		
+		if (codigoBarrasEan13 != null) {
+			productByCodBarras = produtoRepository.findByCodigoBarrasEAN13(codigoBarrasEan13);
+		}
+
+		Produto product = new Produto();
 
 		if (productByCodBarras.isPresent()) {
-			produto = productByCodBarras.get();
+			product = productByCodBarras.get();
 		} else if (productByDescricao.isPresent()) {
-			produto = productByDescricao.get();
+			product = productByDescricao.get();
 		} else {
 			return false;
 		}
 
-		produto.sumEstoque(p.getEstoque());
-		produtoRepository.save(produto);
+		product.sumEstoque(p.getEstoque());
+		product.setPreco(p.getPreco());
+		product.setPrecoFornecedor(p.getPrecoFornecedor());
+		produtoRepository.save(product);
 
 		return true;
 	}
 
-	private String extrairMensagemErro(DataIntegrityViolationException e) {
-		String mensagemCompleta = e.getRootCause().getMessage();
+	private String extrairMensagemErro(DataIntegrityViolationException exception) {
+		String message = exception.getRootCause().getMessage();
 
-		if (mensagemCompleta.contains("codigo_barrasean13")) {
+		if (message.contains("codigo_barrasean13")) {
 			return "Já existe um produto cadastrado com este Código de Barras.";
-		} else if (mensagemCompleta.contains("descricao")) {
+		} else if (message.contains("descricao")) {
 			return "Já existe um produto cadastrado com esta Descrição.";
 		}
 
 		return "Erro de integridade ao salvar produto.";
 	}
 
-	@Async
-	@CacheEvict(value = "produtos_ativos", allEntries = true)
-	public void importarProdutosCsv(String filePath) throws IOException {
-		List<CsvToProduto> produtosCsv = parseCsvFile(filePath);
-		List<Produto> produtos = new ArrayList<>();
-		ProdutosFromCsv resultado = new ProdutosFromCsv();
-
-		for (CsvToProduto pCsv : produtosCsv) {
-			Produto p = new Produto(
-					pCsv.getDescricao(),
-					pCsv.getUnidadeMedida(),
-					pCsv.getEstoque(),
-					pCsv.getPrecoFornecedor(),
-					pCsv.getPreco(),
-					pCsv.getCodigoBarrasEAN13());
-
+	private void importProducts(List<Produto> products, String origin) {
+		ProdutosImportados result = new ProdutosImportados();
+		List<Produto> newProducts = new ArrayList<>();
+		
+		for (Produto p : products) {
 			if (ifProductAlreadyExistsUpdateIt(p)) {
-				resultado.somar();
+				result.somar();
 				continue;
 			}
-
-			produtos.add(p);
+			newProducts.add(p);
 		}
 
-		for (Produto produto : produtos) {
+		for (Produto product : newProducts) {
 			try {
-				produtoRepository.save(produto);
-				resultado.somar();
+				produtoRepository.save(product);
+				result.somar();
 			} catch (DataIntegrityViolationException e) {
-				String mensagemErro = extrairMensagemErro(e);
-				resultado.getProdutosComErro()
-						.add(new ProdutoComErro(produto.getDescricao(), produto.getCodigoBarrasEAN13(), mensagemErro));
+				String errorMessage = extrairMensagemErro(e);
+				result.getProdutosComErro()
+						.add(new ProdutoComErro(product.getDescricao(), product.getCodigoBarrasEAN13(), errorMessage));
 			}
 		}
 
-		if (resultado.getProdutosComErro().isEmpty()) {
-			redisTemplate.convertAndSend(RESULTADO_UPLOAD_CSV_CHANNEL,
-					String.format("Todos os %d produtos foram importados com sucesso!", resultado.getProdutosSalvos()));
-		} else {
-			String resultadoJson = objectMapper.writeValueAsString(resultado);
-			redisTemplate.opsForValue().set(importCsvRedisKey, resultadoJson, 3, TimeUnit.HOURS);
-
-			redisTemplate.convertAndSend(
-					RESULTADO_UPLOAD_CSV_CHANNEL,
-					String.format("""
-							O processo de importação dos produtos foi concluído.
-							Produtos salvos: %d
-							Produtos com erro: %d
-							""", resultado.getProdutosSalvos(), resultado.getProdutosComErro().size()));
-		}
-
-		Files.deleteIfExists(Path.of(filePath));
+		int savedProducts = result.getProdutosSalvos();
+		
+		redisProductUtils.sendMessageOrStoreError(
+				IMPORT_PRODUCTS_RESULT_CHANNEL,
+				origin.equals("CSV") ? importProductsByCsvRedisKey : importProductsByXmlRedisKey,
+				String.format("Todos os %d produtos foram importados com sucesso!", savedProducts),
+				String.format("""
+						O processo de importação dos produtos foi concluído.
+						Produtos salvos: %d
+						Produtos com erro: %d
+						""", savedProducts, result.getProdutosComErro().size()),
+				result);
 	}
 
 }

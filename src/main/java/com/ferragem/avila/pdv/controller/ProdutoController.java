@@ -31,12 +31,12 @@ import org.springframework.web.multipart.MultipartFile;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.ferragem.avila.pdv.dto.ProdutoDto;
-import com.ferragem.avila.pdv.dto.UpdateProdutoDto;
+import com.ferragem.avila.pdv.dto.produto.ProdutoDto;
+import com.ferragem.avila.pdv.dto.produto.UpdateProdutoDto;
 import com.ferragem.avila.pdv.model.Produto;
 import com.ferragem.avila.pdv.service.ProdutoService;
 import com.ferragem.avila.pdv.utils.api_responses_examples.ProdutoResponses;
-import com.ferragem.avila.pdv.utils.csv_product_conversion.ProdutosFromCsv;
+import com.ferragem.avila.pdv.utils.product_conversion.csv.ProdutosImportados;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -55,15 +55,18 @@ public class ProdutoController {
 	private final ProdutoService produtoService;
 	private final RedisTemplate<String, Object> redisTemplate;
 	private final ObjectMapper objectMapper;
-
-	@Value("${import-csv.redis.key}")
-	private String importCsvRedisKey;
+	private final String importProductsByCsvRedisKey;
+	private final String importProductsByXmlRedisKey;
 
 	public ProdutoController(ProdutoService produtoService, RedisTemplate<String, Object> redisTemplate,
-			ObjectMapper objectMapper) {
+			ObjectMapper objectMapper,
+			@Value("${import-csv.redis.key}") String importProductsByCsvRedisKey,
+			@Value("${import-xml.redis.key}") String importProductsByXmlRedisKey) {
 		this.produtoService = produtoService;
 		this.redisTemplate = redisTemplate;
 		this.objectMapper = objectMapper;
+		this.importProductsByCsvRedisKey = importProductsByCsvRedisKey;
+		this.importProductsByXmlRedisKey = importProductsByXmlRedisKey;
 	}
 
 	@Operation(summary = "Buscar todos os produtos ativos", description = """
@@ -133,13 +136,13 @@ public class ProdutoController {
 		return ResponseEntity.status(201).body(produtoService.save(produtoDto));
 	}
 
-	@Operation(summary = "Cadastrar produtos via arquivo CSV", description = """
-			Este recurso só pode ser usado por usuários administradores e cadastra uma lista de produtos via arquivo CSV
+	@Operation(summary = "Importar produtos via arquivo CSV", description = """
+			Este recurso só pode ser usado por usuários administradores e importa uma lista de produtos via arquivo CSV
 			""")
 	@ApiResponses(value = {
-			@ApiResponse(responseCode = "200", description = "Success", content = @Content(mediaType = "application/json"))
+			@ApiResponse(responseCode = "202", description = "Processing", content = @Content(mediaType = "application/json"))
 	})
-	@PostMapping(path = "/importar-csv", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+	@PostMapping(path = "/importar-via-csv", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
 	@PreAuthorize("hasAuthority('SCOPE_ADMIN')")
 	public ResponseEntity<String> saveFromCsv(@RequestPart MultipartFile file) {
 		String fileName = file.getOriginalFilename();
@@ -147,10 +150,10 @@ public class ProdutoController {
 		try {
 			Path tempFile = Files.createTempFile(fileName, ".csv");
 			file.transferTo(tempFile);
-			produtoService.importarProdutosCsv(tempFile.toString());
+			produtoService.importarProdutosViaCsv(tempFile.toString());
 
 			String responseMsg = "Importando produtos do arquivo CSV: " + fileName;
-			return ResponseEntity.ok().body(responseMsg);
+			return ResponseEntity.status(202).body(responseMsg);
 		} catch (IOException e) {
 			log.error("Erro ao processar o arquivo CSV 'IOException': ", e);
 			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
@@ -158,23 +161,70 @@ public class ProdutoController {
 		}
 	}
 
-	@Operation(summary = "Buscar o resultado da importação de arquivos via CSV", description = """
-			Este recurso só pode ser usado por usuários administradores e busca o resultado da importação de arquivos via CSV do cache Redis,
-			informando se obteve sucesso ou erro ao cadastrar cada produto
+	@Operation(summary = "Importar produtos via Nota Fiscal Eletrônica", description = """
+			Este recurso só pode ser usado por usuários administradores e importa uma lista de produtos via nota fiscal eletrônica (NF-e) a partir da chave de acesso
 			""")
 	@ApiResponses(value = {
-			@ApiResponse(responseCode = "200", description = "Success", content = @Content(mediaType = "application/json"))
+			@ApiResponse(responseCode = "202", description = "Processing", content = @Content(mediaType = "application/json"))
 	})
-	@GetMapping("/importar-csv/resultado")
+	@PostMapping("/importar-via-xml")
 	@PreAuthorize("hasAuthority('SCOPE_ADMIN')")
-	public ResponseEntity<ProdutosFromCsv> getSaveFromCsvResult() {
-		if (redisTemplate.hasKey(importCsvRedisKey)) {
-			String redisValue = (String) redisTemplate.opsForValue().get(importCsvRedisKey);
-			ProdutosFromCsv resultado = new ProdutosFromCsv();
+	public ResponseEntity<String> saveFromXml(@RequestParam String chaveAcessoNfe, double porcentagemAumentoPreco) {
+		String responseMsg = "Importando produtos da NF-e: " + chaveAcessoNfe;
+		produtoService.importarProdutosViaXml(chaveAcessoNfe, porcentagemAumentoPreco);
+		return ResponseEntity.status(202).body(responseMsg);
+	}
+
+	@Operation(summary = "Buscar o resultado da importação de arquivos via CSV", description = """
+			Este recurso só pode ser usado por usuários administradores e busca o resultado da importação de arquivos via CSV do cache Redis,
+			informando os erros ao cadastrar cada produto. Caso não tenha tido nenhum erro, não haverá nada salvo no redis e o retorno será 404.
+			""")
+	@ApiResponses(value = {
+			@ApiResponse(responseCode = "200", description = "Success", content = @Content(mediaType = "application/json")),
+			@ApiResponse(responseCode = "404", description = "Not Found", content = @Content(mediaType = "application/json"))
+	})
+	@GetMapping("/importar-via-csv/resultado")
+	@PreAuthorize("hasAuthority('SCOPE_ADMIN')")
+	public ResponseEntity<ProdutosImportados> getSaveFromCsvResult() {
+		if (redisTemplate.hasKey(importProductsByCsvRedisKey)) {
+			String redisValue = (String) redisTemplate.opsForValue().get(importProductsByCsvRedisKey);
+			ProdutosImportados resultado = new ProdutosImportados();
 
 			try {
-				resultado = objectMapper.readValue(redisValue, ProdutosFromCsv.class);
-				redisTemplate.delete(importCsvRedisKey);
+				resultado = objectMapper.readValue(redisValue, ProdutosImportados.class);
+				redisTemplate.delete(importProductsByCsvRedisKey);
+			} catch (JsonMappingException e) {
+				e.printStackTrace();
+				log.error("Erro ao mapear o objeto do Redis (String) para a classe 'ProdutosFromCsv': ", e);
+			} catch (JsonProcessingException e) {
+				e.printStackTrace();
+				log.error("Erro ao mapear o objeto do Redis (String) para a classe 'ProdutosFromCsv': ", e);
+			}
+
+			return ResponseEntity.ok(resultado);
+		}
+
+		return ResponseEntity.notFound().build();
+	}
+
+	@Operation(summary = "Buscar o resultado da importação de arquivos via XML", description = """
+			Este recurso só pode ser usado por usuários administradores e busca o resultado da importação de arquivos via XML de Nota Fiscal Eletrônica do cache Redis,
+			informando os erros ao cadastrar cada produto. Caso não tenha tido nenhum erro, não haverá nada salvo no redis e o retorno será 404.
+			""")
+	@ApiResponses(value = {
+			@ApiResponse(responseCode = "200", description = "Success", content = @Content(mediaType = "application/json")),
+			@ApiResponse(responseCode = "404", description = "Not Found", content = @Content(mediaType = "application/json"))
+	})
+	@GetMapping("/importar-via-xml/resultado")
+	@PreAuthorize("hasAuthority('SCOPE_ADMIN')")
+	public ResponseEntity<ProdutosImportados> getSaveFromXmlResult() {
+		if (redisTemplate.hasKey(importProductsByXmlRedisKey)) {
+			String redisValue = (String) redisTemplate.opsForValue().get(importProductsByXmlRedisKey);
+			ProdutosImportados resultado = new ProdutosImportados();
+
+			try {
+				resultado = objectMapper.readValue(redisValue, ProdutosImportados.class);
+				redisTemplate.delete(importProductsByXmlRedisKey);
 			} catch (JsonMappingException e) {
 				e.printStackTrace();
 				log.error("Erro ao mapear o objeto do Redis (String) para a classe 'ProdutosFromCsv': ", e);

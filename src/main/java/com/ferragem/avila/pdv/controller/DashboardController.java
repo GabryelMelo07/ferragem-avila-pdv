@@ -16,7 +16,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonMappingException;
-import com.ferragem.avila.pdv.dto.GraficoVendasDto;
+import com.ferragem.avila.pdv.dto.venda.GraficoVendasDto;
 import com.ferragem.avila.pdv.model.Produto;
 import com.ferragem.avila.pdv.service.ProdutoService;
 import com.ferragem.avila.pdv.service.VendaService;

@@ -5,11 +5,6 @@
     "description": "This annotation turns swagger enabled in dev mode and the default value is false."
   },
   {
-    "name": "api.security.token.secret",
-    "type": "java.lang.String",
-    "description": "Json Web Token Secret, used to encrypt and decrypt the JWT Tokens on HTTPs Requests."
-  },
-  {
     "name": "admin.config.username",
     "type": "java.lang.String",
     "description": "Username to create the first admin user when the application starts."
@@ -62,7 +57,12 @@
   {
     "name": "import-csv.redis.key",
     "type": "java.lang.String",
-    "description": "The redis key for the result of the import csv (saveFromCsv) method"
+    "description": "The redis key for the result of the import products by csv method"
+  },
+  {
+    "name": "import-xml.redis.key",
+    "type": "java.lang.String",
+    "description": "The redis key for the result of the import products by xml method"
   },
   {
     "name": "spring.cloud.aws.endpoint",
@@ -98,5 +98,10 @@
     "name": "logotipo-email-template",
     "type": "java.lang.String",
     "description": "URL to the image that will be used as a logo in the email template"
+  },
+  {
+    "name": "nfe.api.url",
+    "type": "java.lang.String",
+    "description": "URL to the API responsible by download the XML of the NFe"
   }
 ]}

@@ -17,11 +17,11 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.ferragem.avila.pdv.dto.GraficoVendasDto;
-import com.ferragem.avila.pdv.dto.ItemDto;
-import com.ferragem.avila.pdv.dto.VendaDto;
-import com.ferragem.avila.pdv.dto.VendasDiariasDto;
-import com.ferragem.avila.pdv.dto.VendedorDto;
+import com.ferragem.avila.pdv.dto.venda.GraficoVendasDto;
+import com.ferragem.avila.pdv.dto.venda.ItemDto;
+import com.ferragem.avila.pdv.dto.venda.VendaDto;
+import com.ferragem.avila.pdv.dto.venda.VendasDiariasDto;
+import com.ferragem.avila.pdv.dto.venda.VendedorDto;
 import com.ferragem.avila.pdv.exceptions.CodigoBarrasInvalidoException;
 import com.ferragem.avila.pdv.exceptions.ProdutoSemEstoqueException;
 import com.ferragem.avila.pdv.exceptions.VendaNotFoundException;
@@ -114,12 +114,13 @@ public class VendaService {
         return vendaRepository.findByConcluidaFalse();
     }
 
+	@CacheEvict(value = { "produtos_ativos" }, allEntries = true)
     public void cancel() {
         Venda venda = getVendaAtiva().orElseThrow(() -> new VendaNotFoundException());
         List<Item> itens = venda.getItens();
 
         for (Item item : itens) {
-            item.getProduto().sumEstoque(item.getQuantidade());
+			produtoService.restoreStock(item.getProduto(), item.getQuantidade());
         }
 
         itemService.deleteAll(itens);

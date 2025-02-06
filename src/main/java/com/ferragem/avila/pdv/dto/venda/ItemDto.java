@@ -1,4 +1,4 @@
-package com.ferragem.avila.pdv.dto;
+package com.ferragem.avila.pdv.dto.venda;
 
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
