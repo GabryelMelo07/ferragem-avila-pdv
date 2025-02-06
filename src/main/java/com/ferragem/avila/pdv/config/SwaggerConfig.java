@@ -5,6 +5,7 @@ import java.util.Set;
 
 import org.springdoc.core.customizers.OpenApiCustomizer;
 import org.springdoc.core.properties.SwaggerUiConfigProperties;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Primary;
@@ -27,6 +28,12 @@ import io.swagger.v3.oas.models.servers.Server;
 @SecurityScheme(name = "bearerAuth", type = SecuritySchemeType.HTTP, bearerFormat = "JWT", scheme = "bearer")
 public class SwaggerConfig {
 
+	private final String activeProfile;
+
+	public SwaggerConfig(@Value("${spring.profiles.active}") String activeProfile) {
+		this.activeProfile = activeProfile;
+	}
+	
 	@Bean
 	OpenAPI customOpenApi() {
 		return new OpenAPI()
@@ -83,6 +90,12 @@ public class SwaggerConfig {
 		SwaggerUiConfigProperties swaggerUiConfig = new SwaggerUiConfigProperties();
 		swaggerUiConfig.setDefaultModelExpandDepth(-1);
 		swaggerUiConfig.setDocExpansion("none");
+
+		if ("prod".equals(activeProfile)) { // Testing
+            swaggerUiConfig.setEnabled(true);
+            swaggerUiConfig.setTryItOutEnabled(false);
+        }
+		
 		return swaggerUiConfig;
 	}
 

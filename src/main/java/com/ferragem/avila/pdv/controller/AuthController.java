@@ -9,7 +9,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
-import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
@@ -28,14 +27,14 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
 
-import com.ferragem.avila.pdv.dto.CreateUserDto;
-import com.ferragem.avila.pdv.dto.JweTokenDto;
-import com.ferragem.avila.pdv.dto.LoginRequestDto;
-import com.ferragem.avila.pdv.dto.LoginResponseDto;
-import com.ferragem.avila.pdv.dto.RefreshTokenRequestDto;
-import com.ferragem.avila.pdv.dto.ResetPasswordDto;
-import com.ferragem.avila.pdv.dto.SendEmailDto;
 import com.ferragem.avila.pdv.dto.UserResponseDto;
+import com.ferragem.avila.pdv.dto.auth.CreateUserDto;
+import com.ferragem.avila.pdv.dto.auth.JweTokenDto;
+import com.ferragem.avila.pdv.dto.auth.LoginRequestDto;
+import com.ferragem.avila.pdv.dto.auth.LoginResponseDto;
+import com.ferragem.avila.pdv.dto.auth.RefreshTokenRequestDto;
+import com.ferragem.avila.pdv.dto.auth.ResetPasswordDto;
+import com.ferragem.avila.pdv.dto.auth.SendEmailDto;
 import com.ferragem.avila.pdv.exceptions.JweTokenException;
 import com.ferragem.avila.pdv.exceptions.JwtTokenValidationException;
 import com.ferragem.avila.pdv.model.Role;
@@ -165,15 +164,10 @@ public class AuthController {
 			throw new BadCredentialsException("Nome de usuário ou senha inválidos.");
 
 		User usuario = user.get();
-		var scopes = usuario.getRoles()
-				.stream()
-				.map(Role::getName)
-				.collect(Collectors.joining(" "));
-
 		String userId = usuario.getId().toString();
 
-		var accessToken = jwtUtils.buildJwtAccessToken(issuer, userId, scopes);
-		var refreshToken = jwtUtils.buildJwtAccessToken(issuer, userId, scopes);
+		var accessToken = jwtUtils.buildJwtAccessToken(issuer, userId, usuario);
+		var refreshToken = jwtUtils.buildJwtAccessToken(issuer, userId, usuario);
 
 		return ResponseEntity.ok(new LoginResponseDto(accessToken, refreshToken));
 	}
@@ -272,16 +266,10 @@ public class AuthController {
 
 		User usuario = userRepository.findById(UUID.fromString(accessToken.getSubject()))
 				.orElseThrow(() -> new EntityNotFoundException("Usuário não encontrado."));
-
-		var scopes = usuario.getRoles()
-				.stream()
-				.map(Role::getName)
-				.collect(Collectors.joining(" "));
-
 		String userId = usuario.getId().toString();
 
-		var newAccessToken = jwtUtils.buildJwtAccessToken(issuer, userId, scopes);
-		var newRefreshToken = jwtUtils.buildJwtAccessToken(issuer, userId, scopes);
+		var newAccessToken = jwtUtils.buildJwtAccessToken(issuer, userId, usuario);
+		var newRefreshToken = jwtUtils.buildJwtAccessToken(issuer, userId, usuario);
 
 		// Revoking old tokens
 		redisTokenUtils.revokeToken(accessToken.getTokenValue(), accessToken.getExpiresAt());

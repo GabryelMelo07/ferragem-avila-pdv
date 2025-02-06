@@ -1,4 +1,4 @@
-package com.ferragem.avila.pdv.dto;
+package com.ferragem.avila.pdv.dto.auth;
 
 import java.util.Set;
 

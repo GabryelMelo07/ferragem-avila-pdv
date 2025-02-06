@@ -7,7 +7,7 @@ import java.util.Date;
 
 import org.springframework.stereotype.Component;
 
-import com.ferragem.avila.pdv.dto.JweTokenDto;
+import com.ferragem.avila.pdv.dto.auth.JweTokenDto;
 import com.ferragem.avila.pdv.exceptions.JweTokenException;
 import com.nimbusds.jose.crypto.RSASSASigner;
 import com.nimbusds.jose.EncryptionMethod;

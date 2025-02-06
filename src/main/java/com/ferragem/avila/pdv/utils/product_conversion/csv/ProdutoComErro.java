@@ -1,4 +1,4 @@
-package com.ferragem.avila.pdv.utils.csv_product_conversion;
+package com.ferragem.avila.pdv.utils.product_conversion.csv;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;

@@ -13,10 +13,10 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.ferragem.avila.pdv.dto.ItemDto;
-import com.ferragem.avila.pdv.dto.DataBetweenDto;
-import com.ferragem.avila.pdv.dto.VendaDto;
-import com.ferragem.avila.pdv.dto.VendedorDto;
+import com.ferragem.avila.pdv.dto.venda.DataBetweenDto;
+import com.ferragem.avila.pdv.dto.venda.ItemDto;
+import com.ferragem.avila.pdv.dto.venda.VendaDto;
+import com.ferragem.avila.pdv.dto.venda.VendedorDto;
 import com.ferragem.avila.pdv.model.Item;
 import com.ferragem.avila.pdv.model.Venda;
 import com.ferragem.avila.pdv.model.enums.VendaExclusaoResultado;

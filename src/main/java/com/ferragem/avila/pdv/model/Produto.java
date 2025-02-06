@@ -3,7 +3,7 @@ package com.ferragem.avila.pdv.model;
 import java.io.Serializable;
 import java.math.BigDecimal;
 
-import com.ferragem.avila.pdv.dto.ProdutoDto;
+import com.ferragem.avila.pdv.dto.produto.ProdutoDto;
 import com.ferragem.avila.pdv.exceptions.ProdutoSemEstoqueException;
 import com.ferragem.avila.pdv.model.enums.UnidadeMedida;
 
@@ -17,11 +17,9 @@ import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
-import lombok.NoArgsConstructor;
 import lombok.ToString.Include;
 
 @Data
-@NoArgsConstructor
 @Entity
 @Table(name = "produto")
 public class Produto implements Serializable {
@@ -56,6 +54,10 @@ public class Produto implements Serializable {
 
     @Column()
     private String imagem;
+
+	public Produto() {
+		this.ativo = true;
+	}
     
     public Produto(ProdutoDto dto) {
         this.descricao = dto.descricao();
@@ -88,6 +90,14 @@ public class Produto implements Serializable {
         this.codigoBarrasEAN13 = codigoBarrasEAN13;
         this.ativo = true;
     }
+
+	public void setCodigoBarrasEAN13(String codigoBarrasEan13) {
+		if (!codigoBarrasEan13.matches("^\\d{13}$")) {
+			this.codigoBarrasEAN13 = null;
+		} else {
+			this.codigoBarrasEAN13 = codigoBarrasEan13;
+		}
+	}
 
     public void sumEstoque(float quantidade) {
         this.estoque += quantidade;
