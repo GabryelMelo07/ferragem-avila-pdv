@@ -27,14 +27,14 @@ public class RedisUtils {
 		return redisTemplate.hasKey(key);
 	}
 
-	public String getValue(String key) {
-		return String.valueOf(redisTemplate.opsForValue().get(key));
+	public Object getValue(String key) {
+		return redisTemplate.opsForValue().get(key);
 	}
 
 	public <T> void storeValue(String key, T value, long timeout, TimeUnit timeUnit) {		
 		try {
-			String resultJson = objectMapper.writeValueAsString(value);
-			redisTemplate.opsForValue().set(key, resultJson, 3, TimeUnit.HOURS);
+			String valueStr = (value instanceof String) ? (String) value : objectMapper.writeValueAsString(value);
+			redisTemplate.opsForValue().set(key, valueStr, 3, TimeUnit.HOURS);
 		} catch (JsonProcessingException e) {
 			throw new JsonParseException(e);
 		}
