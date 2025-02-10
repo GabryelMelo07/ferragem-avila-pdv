@@ -14,7 +14,9 @@ import com.ferragem.avila.pdv.utils.product_conversion.xml.NfeProc;
 import com.ferragem.avila.pdv.utils.product_conversion.xml.XmlParserUtil;
 
 import jakarta.xml.bind.JAXBException;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 @Service
 public class NfeApiService {
 
@@ -40,6 +42,7 @@ public class NfeApiService {
 		try {
 			nfeProc = XmlParserUtil.parseXml(xmlResponse);
 		} catch (JAXBException e) {
+			log.error("Erro ao realizar o parse do XML: ", e);
 			throw new XmlParsingException(e.getMessage());
 		}
 

@@ -12,8 +12,8 @@ import org.springframework.stereotype.Service;
 
 import lombok.extern.slf4j.Slf4j;
 
-@Service
 @Slf4j
+@Service
 public class RelatorioService {
 
     public <T> byte[] gerarRelatorioProdutos(List<String> cabecalho, String nomePagina, List<T> data) {
@@ -58,6 +58,7 @@ public class RelatorioService {
 
             return outputStream.toByteArray();
         } catch (Exception e) {
+			log.error("Erro ao criar o Workbook na geração de relatório geral de produtos: ", e);
             throw new RuntimeException(e);
         }
     }

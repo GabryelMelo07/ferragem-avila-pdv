@@ -9,6 +9,9 @@ import org.springframework.stereotype.Component;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import lombok.extern.slf4j.Slf4j;
+
+@Slf4j
 @Component
 public class RedisUtils {
 	private final RedisTemplate<String, Object> redisTemplate;
@@ -36,6 +39,7 @@ public class RedisUtils {
 			String valueStr = (value instanceof String) ? (String) value : objectMapper.writeValueAsString(value);
 			redisTemplate.opsForValue().set(key, valueStr, 3, TimeUnit.HOURS);
 		} catch (JsonProcessingException e) {
+			log.error("Erro ao tentar armazenar uma chave no Redis: ", e);
 			throw new JsonParseException(e);
 		}
 	}
@@ -45,6 +49,7 @@ public class RedisUtils {
 			String resultJson = objectMapper.writeValueAsString(value);
 			redisTemplate.opsForValue().set(key, resultJson);
 		} catch (JsonProcessingException e) {
+			log.error("Erro ao tentar armazenar uma chave no Redis: ", e);
 			throw new JsonParseException(e);
 		}
 	}
