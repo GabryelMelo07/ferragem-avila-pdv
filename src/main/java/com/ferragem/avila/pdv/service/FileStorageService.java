@@ -11,7 +11,9 @@ import org.springframework.web.multipart.MultipartFile;
 
 import io.awspring.cloud.s3.S3Resource;
 import io.awspring.cloud.s3.S3Template;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 @Service
 public class FileStorageService {
 
@@ -33,8 +35,11 @@ public class FileStorageService {
             S3Resource uploadedImg = s3Template.upload(imagesBucket, imageName, img);
             return uploadedImg.getURL().toString();
         } catch (IOException ex) {
-            throw new RuntimeException("Não foi possivel realizar o upload do documento", ex);
+			String errorMessage = "Não foi possivel realizar o upload do documento";
+			log.error(errorMessage, ex);
+            throw new RuntimeException(errorMessage, ex);
         } catch (Exception ex) {
+			log.error("Erro no uploadImage: ", ex);
             throw ex;
         }
     }
@@ -51,8 +56,11 @@ public class FileStorageService {
             s3Template.upload(reportsBucket, reportName, report);
             return reportName;
         } catch (IOException ex) {
-            throw new RuntimeException("Não foi possivel realizar o upload do documento", ex);
+            String errorMessage = "Não foi possivel realizar o upload do documento";
+			log.error(errorMessage, ex);
+            throw new RuntimeException(errorMessage, ex);
         } catch (Exception ex) {
+            log.error("Erro no uploadReport: ", ex);
             throw ex;
         }
     }
@@ -62,8 +70,11 @@ public class FileStorageService {
             S3Resource downloadedReport = s3Template.download(reportsBucket, reportFileName);
             return downloadedReport.getContentAsByteArray();
         } catch (IOException ex) {
-            throw new RuntimeException("Erro ao baixar o relatório do S3", ex);
+			String errorMessage = "Erro ao baixar o relatório do S3";
+			log.error(errorMessage, ex);
+            throw new RuntimeException(errorMessage, ex);
         } catch (Exception ex) {
+			log.error("Erro no downloadReport: ", ex);
             throw ex;
         }
     }

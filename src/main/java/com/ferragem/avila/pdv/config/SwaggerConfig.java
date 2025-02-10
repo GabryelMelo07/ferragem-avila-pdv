@@ -1,5 +1,6 @@
 package com.ferragem.avila.pdv.config;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Set;
 
@@ -91,9 +92,8 @@ public class SwaggerConfig {
 		swaggerUiConfig.setDefaultModelExpandDepth(-1);
 		swaggerUiConfig.setDocExpansion("none");
 
-		if ("prod".equals(activeProfile)) { // Testing
-            swaggerUiConfig.setEnabled(true);
-            swaggerUiConfig.setTryItOutEnabled(false);
+		if ("prd".equals(activeProfile)) {
+			swaggerUiConfig.setSupportedSubmitMethods(new ArrayList<>());
         }
 		
 		return swaggerUiConfig;
