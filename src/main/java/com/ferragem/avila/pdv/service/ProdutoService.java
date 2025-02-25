@@ -34,6 +34,7 @@ import com.ferragem.avila.pdv.exceptions.XlsxSizeLimitException;
 import com.ferragem.avila.pdv.model.Produto;
 import com.ferragem.avila.pdv.model.enums.UnidadeMedida;
 import com.ferragem.avila.pdv.repository.ProdutoRepository;
+import com.ferragem.avila.pdv.service.apis.NfeApiService;
 import com.ferragem.avila.pdv.utils.product_conversion.RedisProductUtils;
 import com.ferragem.avila.pdv.utils.product_conversion.csv.CsvToProduto;
 import com.ferragem.avila.pdv.utils.product_conversion.csv.ProdutoComErro;
@@ -56,11 +57,6 @@ public class ProdutoService {
 	private final Integer xlsxFileLimit;
 	private final String importProductsByCsvRedisKey;
 	private final String importProductsByXmlRedisKey;
-
-	// Tópicos do sistema de Pub/Sub do Redis, para publicar mensagens que serão
-	// consumidas no frontend.
-	private final String ALL_PRODUCTS_REPORT_CHANNEL = "pdv:all-products-report";
-	private final String IMPORT_PRODUCTS_RESULT_CHANNEL = "pdv:import-products-result";
 
 	public ProdutoService(ProdutoRepository produtoRepository, FileStorageService fileStorageService,
 			RelatorioService relatorioService, RedisProductUtils redisProductUtils, NfeApiService nfeApiService,
@@ -102,7 +98,7 @@ public class ProdutoService {
 			String nomeRelatorio = fileStorageService.uploadReport(relatorio, "relatorio_produtos");
 
 			redisProductUtils.storeValueAndSendMessage(relatorioKey, nomeRelatorio, 3, TimeUnit.HOURS,
-					ALL_PRODUCTS_REPORT_CHANNEL, "Relatório de produtos gerado com sucesso!");
+					"Relatório de produtos gerado com sucesso!");
 		}
 	}
 
@@ -248,12 +244,6 @@ public class ProdutoService {
 		List<Det> produtosXml = nfeApiService.getNfeXml(chaveAcessoNfe);
 		List<Produto> produtos = new ArrayList<>();
 
-		System.out.println("""
-				*********************************************
-				REQUEST RESULT: %s
-				*********************************************
-				""".formatted(produtosXml));
-
 		Map<String, UnidadeMedida> unidadeMap = Map.of(
 				"UN", UnidadeMedida.UNIDADE,
 				"KG", UnidadeMedida.GRAMA,
@@ -261,11 +251,6 @@ public class ProdutoService {
 
 		for (Det det : produtosXml) {
 			ProductFromXML productFromXML = det.getProd();
-			System.out.println("""
-				*********************************************
-				PRODUCT FROM XML: %s
-				*********************************************
-				""".formatted(productFromXML));
 			BigDecimal precoFornecedor = productFromXML.getVUnCom();
 
 			Produto p = new Produto();
@@ -301,7 +286,7 @@ public class ProdutoService {
 
 		Optional<Produto> productByCodBarras = Optional.empty();
 		Optional<Produto> productByDescricao = produtoRepository.findByDescricao(p.getDescricao());
-		
+
 		if (codigoBarrasEan13 != null) {
 			productByCodBarras = produtoRepository.findByCodigoBarrasEAN13(codigoBarrasEan13);
 		}
@@ -339,7 +324,7 @@ public class ProdutoService {
 	private void importProducts(List<Produto> products, String origin) {
 		ProdutosImportados result = new ProdutosImportados();
 		List<Produto> newProducts = new ArrayList<>();
-		
+
 		for (Produto p : products) {
 			if (ifProductAlreadyExistsUpdateIt(p)) {
 				result.somar();
@@ -360,9 +345,8 @@ public class ProdutoService {
 		}
 
 		int savedProducts = result.getProdutosSalvos();
-		
+
 		redisProductUtils.sendMessageOrStoreError(
-				IMPORT_PRODUCTS_RESULT_CHANNEL,
 				origin.equals("CSV") ? importProductsByCsvRedisKey : importProductsByXmlRedisKey,
 				String.format("Todos os %d produtos foram importados com sucesso!", savedProducts),
 				String.format("""
