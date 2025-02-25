@@ -1,4 +1,4 @@
-package com.ferragem.avila.pdv.service;
+package com.ferragem.avila.pdv.service.apis;
 
 import java.util.List;
 

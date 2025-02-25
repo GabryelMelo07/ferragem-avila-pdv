@@ -103,5 +103,10 @@
     "name": "nfe.api.url",
     "type": "java.lang.String",
     "description": "URL to the API responsible by download the XML of the NFe"
+  },
+  {
+    "name": "wss.api.url",
+    "type": "java.lang.String",
+    "description": "URL to the API responsible to send messages in real time using WebSocket to frontend"
   }
 ]}

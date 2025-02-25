@@ -22,10 +22,6 @@ public class RedisUtils {
 		this.objectMapper = objectMapper;
 	}
 
-	public void sendMessage(String channel, String message) {
-		redisTemplate.convertAndSend(channel, message);
-	}
-
 	public Boolean hasKey(String key) {
 		return redisTemplate.hasKey(key);
 	}
