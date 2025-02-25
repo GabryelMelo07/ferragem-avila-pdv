@@ -35,6 +35,7 @@ import com.ferragem.avila.pdv.model.Produto;
 import com.ferragem.avila.pdv.model.enums.UnidadeMedida;
 import com.ferragem.avila.pdv.repository.ProdutoRepository;
 import com.ferragem.avila.pdv.service.apis.NfeApiService;
+import com.ferragem.avila.pdv.utils.OperationStatus;
 import com.ferragem.avila.pdv.utils.product_conversion.RedisProductUtils;
 import com.ferragem.avila.pdv.utils.product_conversion.csv.CsvToProduto;
 import com.ferragem.avila.pdv.utils.product_conversion.csv.ProdutoComErro;
@@ -98,7 +99,7 @@ public class ProdutoService {
 			String nomeRelatorio = fileStorageService.uploadReport(relatorio, "relatorio_produtos");
 
 			redisProductUtils.storeValueAndSendMessage(relatorioKey, nomeRelatorio, 3, TimeUnit.HOURS,
-					"Relatório de produtos gerado com sucesso!");
+					"Relatório de produtos gerado com sucesso!", OperationStatus.SUCCESS);
 		}
 	}
 
