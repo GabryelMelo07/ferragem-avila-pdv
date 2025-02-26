@@ -36,7 +36,7 @@ public class WebSocketSendMessageService {
 				log.info("Tentando enviar mensagem, tentativa {}/{}", attempts, MAX_RETRIES);
 
 				ResponseEntity<String> response = restClient.post()
-						.uri(wssApiUrl)
+						.uri(wssApiUrl + "/message/send")
 						.body(new WssMessageRequest(status, message))
 						.retrieve()
 						.toEntity(String.class);
