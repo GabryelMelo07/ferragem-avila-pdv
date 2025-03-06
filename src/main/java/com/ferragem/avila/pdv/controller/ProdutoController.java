@@ -76,7 +76,7 @@ public class ProdutoController {
 			@ApiResponse(responseCode = "200", description = "Success", content = @Content(mediaType = "application/json", examples = @ExampleObject(value = ProdutoResponses.GET_ALL_PRODUTOS_ATIVOS)))
 	})
 	@GetMapping("/ativos")
-	public ResponseEntity<Page<Produto>> getAllProdutosAtivos(Pageable pageable, Direction direction) {
+	public ResponseEntity<Page<Produto>> getAllProdutosAtivos(Pageable pageable, @RequestParam(defaultValue = "ASC") Direction direction) {
 		if (direction == Direction.DESC) {
 			Sort originalSort = pageable.getSort();
 			Sort sort = Sort.by(originalSort.stream()
