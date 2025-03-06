@@ -26,6 +26,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.ferragem.avila.pdv.dto.WssMessageRequest;
 import com.ferragem.avila.pdv.dto.produto.ProdutoDto;
 import com.ferragem.avila.pdv.dto.produto.UpdateProdutoDto;
 import com.ferragem.avila.pdv.exceptions.CodigoBarrasInvalidoException;
@@ -35,6 +36,7 @@ import com.ferragem.avila.pdv.model.Produto;
 import com.ferragem.avila.pdv.model.enums.UnidadeMedida;
 import com.ferragem.avila.pdv.repository.ProdutoRepository;
 import com.ferragem.avila.pdv.service.apis.NfeApiService;
+import com.ferragem.avila.pdv.utils.OperationInfo;
 import com.ferragem.avila.pdv.utils.OperationStatus;
 import com.ferragem.avila.pdv.utils.product_conversion.RedisProductUtils;
 import com.ferragem.avila.pdv.utils.product_conversion.csv.CsvToProduto;
@@ -99,7 +101,7 @@ public class ProdutoService {
 			String nomeRelatorio = fileStorageService.uploadReport(relatorio, "relatorio_produtos");
 
 			redisProductUtils.storeValueAndSendMessage(relatorioKey, nomeRelatorio, 3, TimeUnit.HOURS,
-					"Relatório de produtos gerado com sucesso!", OperationStatus.SUCCESS);
+					new WssMessageRequest(OperationStatus.SUCCESS, OperationInfo.RELATORIO_PRODUTOS, "Relatório de produtos gerado com sucesso!"));
 		}
 	}
 
@@ -355,6 +357,7 @@ public class ProdutoService {
 						Produtos salvos: %d
 						Produtos com erro: %d
 						""", savedProducts, result.getProdutosComErro().size()),
+				origin.equals("CSV") ? OperationInfo.CSV : OperationInfo.XML,
 				result);
 	}
 
