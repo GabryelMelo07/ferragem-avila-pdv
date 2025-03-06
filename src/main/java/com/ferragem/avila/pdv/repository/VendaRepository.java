@@ -11,6 +11,8 @@ import org.springframework.data.jpa.repository.Query;
 import com.ferragem.avila.pdv.model.Venda;
 
 public interface VendaRepository extends JpaRepository<Venda, Long> {
+    Page<Venda> findByConcluidaTrueOrderByDataHoraConclusaoDesc(Pageable pageable);
+	
     Optional<Venda> findByConcluidaFalse();
 
     @Query("SELECT v FROM Venda v WHERE CAST(v.dataHoraConclusao AS date) BETWEEN :dataInicio AND :dataFim")

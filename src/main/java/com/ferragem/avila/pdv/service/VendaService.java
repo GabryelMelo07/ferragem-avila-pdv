@@ -48,7 +48,7 @@ public class VendaService {
 
     @Cacheable(value = "vendas", key = "'page_' + #pageable.pageNumber", unless = "#result == null or #result.isEmpty()")
     public Page<Venda> getAll(Pageable pageable) {
-        return vendaRepository.findAll(pageable);
+        return vendaRepository.findByConcluidaTrueOrderByDataHoraConclusaoDesc(pageable);
     }
 
     public Venda getById(long id) {
