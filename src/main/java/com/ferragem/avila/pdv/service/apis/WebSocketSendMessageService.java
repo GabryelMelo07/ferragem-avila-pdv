@@ -7,7 +7,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClient;
 
 import com.ferragem.avila.pdv.dto.WssMessageRequest;
-import com.ferragem.avila.pdv.utils.OperationStatus;
 
 import lombok.extern.slf4j.Slf4j;
 
@@ -26,7 +25,7 @@ public class WebSocketSendMessageService {
 	}
 
 	@Async
-	public void sendMessage(OperationStatus status, String message) {
+	public void sendMessage(WssMessageRequest request) {
 		int attempts = 0;
 		boolean success = false;
 
@@ -37,7 +36,7 @@ public class WebSocketSendMessageService {
 
 				ResponseEntity<String> response = restClient.post()
 						.uri(wssApiUrl + "/message/send")
-						.body(new WssMessageRequest(status, message))
+						.body(request)
 						.retrieve()
 						.toEntity(String.class);
 
