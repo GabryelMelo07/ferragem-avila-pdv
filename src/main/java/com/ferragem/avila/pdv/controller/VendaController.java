@@ -186,9 +186,8 @@ public class VendaController {
             @ApiResponse(responseCode = "200", description = "Success", content = @Content(mediaType = "application/json"))
     })
     @PostMapping("/concluir")
-    public ResponseEntity<Void> concluir(@RequestBody @Valid VendaDto dto) {
-        vendaService.concluirVenda(dto);
-        return ResponseEntity.ok().build();
+    public ResponseEntity<Venda> concluir(@RequestBody @Valid VendaDto dto) {
+        return ResponseEntity.ok().body(vendaService.concluirVenda(dto));
     }
 
     @Operation(summary = "Cancelar a venda ativa", description = """
