@@ -235,7 +235,7 @@ public class VendaService {
     }
 
     @CacheEvict(value = { "vendas", "vendas_between_datas", "produtos_ativos" }, allEntries = true)
-    public void concluirVenda(VendaDto dto) {
+    public Venda concluirVenda(VendaDto dto) {
         Venda venda = getVendaAtiva().orElseThrow(() -> new VendaNotFoundException());
 
         if (dto.dataHoraConclusao().isBefore(venda.getDataHoraInicio()))
@@ -244,7 +244,7 @@ public class VendaService {
         venda.setDataHoraConclusao(dto.dataHoraConclusao());
         venda.setFormaPagamento(dto.formaPagamento());
         venda.setConcluida(true);
-        save(venda);
+        return save(venda);
     }
 
 }
