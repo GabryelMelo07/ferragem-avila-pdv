@@ -164,8 +164,8 @@ public class VendaService {
 
         Produto produto = produtoService.getById(produtoId);            
 
-        if (venda.getItem(produtoId).isPresent()) {
-            Item item = venda.getItem(produtoId).get();
+        if (venda.getItemByProductId(produtoId).isPresent()) {
+            Item item = venda.getItemByProductId(produtoId).get();
             item.sumQuantidade(itemQtd);
             item.calcularPrecoTotal();
         } else {
@@ -222,14 +222,21 @@ public class VendaService {
 
     public Venda removeItem(long itemId) {
         Venda venda = getVendaAtiva().orElseThrow(() -> new VendaNotFoundException());
-        Item item = itemService.getById(itemId);
+
+		Optional<Item> itemOpt = venda.getItem(itemId);
+
+		if (itemOpt.isEmpty()) {
+			throw new EntityNotFoundException("Item não existe na venda.");
+		}
+		
+        Item item = itemOpt.get();
         Produto produto = item.getProduto();
 
-        venda.getItens().remove(item);
-        produto.setEstoque(produto.getEstoque() + item.getQuantidade());
+		venda.getItens().removeIf(i -> i.getId().equals(itemId));
+		produto.sumEstoque(item.getQuantidade());
 
-        produtoService.save(produto);
         itemService.delete(item);
+        produtoService.save(produto);
         venda.calcularPrecoTotal();
         return save(venda);
     }

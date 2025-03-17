@@ -89,11 +89,17 @@ public class Venda implements Serializable {
         }
     }
 
-    public Optional<Item> getItem(long idProduto) {
+    public Optional<Item> getItemByProductId(long idProduto) {
         return itens.stream()
-                .filter(i -> i.getProduto().getId() == idProduto)
+                .filter(i -> i.getProduto().getId().equals(idProduto))
                 .findFirst();
     }
+
+	public Optional<Item> getItem(long itemId) {
+		return itens.stream()
+            .filter(i -> i.getId().equals(itemId))
+            .findFirst();
+	}
 
     public Item addItem(Item item) {
         this.itens.add(item);
