@@ -92,9 +92,9 @@ public class SwaggerConfig {
 		swaggerUiConfig.setDefaultModelExpandDepth(-1);
 		swaggerUiConfig.setDocExpansion("none");
 
-		if ("prd".equals(activeProfile)) {
-			swaggerUiConfig.setSupportedSubmitMethods(new ArrayList<>());
-        }
+		// if ("prd".equals(activeProfile)) {
+		// 	swaggerUiConfig.setSupportedSubmitMethods(new ArrayList<>());
+        // }
 		
 		return swaggerUiConfig;
 	}
