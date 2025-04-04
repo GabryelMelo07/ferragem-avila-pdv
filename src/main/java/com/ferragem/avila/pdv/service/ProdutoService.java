@@ -169,7 +169,9 @@ public class ProdutoService {
 
 	@CacheEvict(value = "produtos_ativos", allEntries = true)
 	public Produto save(ProdutoDto dto) {
-		if (!dto.codigoBarrasEAN13().matches("^\\d{13}$")) {
+		String codigoBarrasEAN13 = dto.codigoBarrasEAN13();
+
+		if (codigoBarrasEAN13 != null && !codigoBarrasEAN13.matches("^\\d{13}$")) {
 			throw new CodigoBarrasInvalidoException();
 		}
 
@@ -183,7 +185,9 @@ public class ProdutoService {
 
 	@CacheEvict(value = "produtos_ativos", allEntries = true)
 	public Produto update(long id, UpdateProdutoDto dto) {
-		if (!dto.codigoBarrasEAN13().matches("^\\d{13}$")) {
+		String codigoBarrasEAN13 = dto.codigoBarrasEAN13();
+		
+		if (codigoBarrasEAN13 != null && !codigoBarrasEAN13.matches("^\\d{13}$")) {
 			throw new CodigoBarrasInvalidoException();
 		}
 
@@ -211,6 +215,13 @@ public class ProdutoService {
 	@CacheEvict(value = { "produtos_ativos", "produtos_inativos" }, allEntries = true)
 	public void delete(long id) {
 		Produto p = getById(id);
+
+		String imgUrl = p.getImagem();
+		
+		if (!imgUrl.isBlank() || !imgUrl.isEmpty() || imgUrl != null) {
+			fileStorageService.deleteImage(imgUrl);
+		}
+		
 		p.setAtivo(false);
 		save(p);
 	}
