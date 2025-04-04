@@ -4,12 +4,15 @@ import java.time.LocalDate;
 
 import org.springframework.beans.factory.annotation.Value;
 
+import lombok.NoArgsConstructor;
+
+@NoArgsConstructor
 public class EmailTemplate {
 
     @Value("${logotipo-email-template}")
-    private static String logoImgLink;
+    private String logoImgLink;
     
-    public static String getResetPasswordTemplate(String nome, String link) {
+    public String getResetPasswordTemplate(String nome, String link) {
         return """
                     <!DOCTYPE html>
                     <html lang="pt-BR">
