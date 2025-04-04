@@ -196,7 +196,7 @@ public class AuthController {
 		}
 		
 		String resetPassUrl = String.format("%s/reset-password?token=%s", frontEndUrl, token);
-		String body = EmailTemplate.getResetPasswordTemplate(user.getNome(), resetPassUrl);
+		String body = new EmailTemplate().getResetPasswordTemplate(user.getNome(), resetPassUrl);
 
 		try {
 			emailService.sendEmailAsync(new SendEmailDto(email, "Solicitação de redefinição de senha - PDV Ferragem Ávila", body));
