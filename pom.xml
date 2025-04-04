@@ -64,9 +64,9 @@
 
 		<!-- AWS S3 -->
 		<dependency>
-			<groupId>io.awspring.cloud</groupId>
-			<artifactId>spring-cloud-aws-starter-s3</artifactId>
-			<version>${spring.cloud-aws-starter-s3}</version>
+			<groupId>software.amazon.awssdk</groupId>
+			<artifactId>s3</artifactId>
+			<version>2.26.7</version>
 		</dependency>
 
 		<!-- Cache Abstraction -->
