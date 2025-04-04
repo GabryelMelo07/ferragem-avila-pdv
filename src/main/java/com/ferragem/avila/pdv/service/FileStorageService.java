@@ -51,16 +51,7 @@ public class FileStorageService {
 					.build();
 
 			s3Client.putObject(putOb, RequestBody.fromByteBuffer(ByteBuffer.wrap(file.getBytes())));
-
-			System.out.println("TESTE 1: " + file.getName());
-			System.out.println("TESTE 2: " + file.getOriginalFilename());
-			System.out.println("TESTE 3: " + file.getContentType());
-			System.out.println("TESTE 4: " + file.getOriginalFilename().split("\\.")[1]);
-
 			String imageUrl = String.format("%s/%s:%s/%s", s3Url, contaboAccessHash, imagesBucket, filename);
-
-			System.out.println("URL: " + imageUrl);
-
 			return imageUrl;
 		} catch (Exception e) {
 			log.error("Não foi possivel realizar o upload da imagem: {}", e.getMessage());
