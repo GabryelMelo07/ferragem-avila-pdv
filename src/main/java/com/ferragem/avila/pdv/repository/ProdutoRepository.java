@@ -25,17 +25,12 @@ public interface ProdutoRepository extends JpaRepository<Produto, Long> {
 
     Optional<Produto> findByDescricao(String descricao);
 
+	Page<Produto> findByAtivoIsTrueAndCodigoBarrasEAN13StartingWith(String parametro, Pageable pageable);
+
+    Page<Produto> findByAtivoIsTrueAndDescricaoContainingIgnoreCase(String parametro, Pageable pageable);
+	
     @Query("SELECT p FROM Produto p WHERE p.estoque <= 10")
     Page<Produto> findProdutosComEstoqueBaixo(Pageable pageable);
-
-    @Query("""
-            SELECT DISTINCT p FROM Produto p
-            WHERE
-                p.ativo = true
-                AND (p.codigoBarrasEAN13 LIKE CONCAT(:parametro, '%'))
-                OR (LOWER(p.descricao) LIKE LOWER(CONCAT('%', :parametro, '%')))
-        """)
-    Page<Produto> findByParametros(Pageable pageable, String parametro);
 
     @Query("""
             SELECT i.produto, SUM(i.quantidade) as totalVendido

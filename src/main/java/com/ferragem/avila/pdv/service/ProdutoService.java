@@ -109,6 +109,10 @@ public class ProdutoService {
 		return fileStorageService.downloadReport(nomeRelatorio);
 	}
 
+	public void deletarRelatorioConsumido(String nomeRelatorio) {
+		fileStorageService.deleteReport(nomeRelatorio);
+	}
+
 	@Cacheable(value = "produtos_ativos", key = "'pagina_' + #pageable.pageNumber + '_' + #pageable.sort.toString()", unless = "#result == null or #result.isEmpty()")
 	public Page<Produto> getAll(Pageable pageable) {
 		return produtoRepository.findByAtivoTrue(pageable);
@@ -120,7 +124,13 @@ public class ProdutoService {
 	}
 
 	public Page<Produto> findByParams(Pageable pageable, String parametro) {
-		return produtoRepository.findByParametros(pageable, parametro);
+		Page<Produto> page = produtoRepository.findByAtivoIsTrueAndCodigoBarrasEAN13StartingWith(parametro, pageable);
+
+		if (page.isEmpty()) {
+			page = produtoRepository.findByAtivoIsTrueAndDescricaoContainingIgnoreCase(parametro, pageable);
+		}
+
+		return page;
 	}
 
 	@Transactional
@@ -218,7 +228,7 @@ public class ProdutoService {
 
 		String imgUrl = p.getImagem();
 		
-		if (!imgUrl.isBlank() || !imgUrl.isEmpty() || imgUrl != null) {
+		if (imgUrl != null && !imgUrl.isBlank()) {
 			fileStorageService.deleteImage(imgUrl);
 		}
 		

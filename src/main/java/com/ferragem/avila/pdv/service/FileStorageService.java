@@ -17,6 +17,7 @@ import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.DeleteObjectRequest;
 import software.amazon.awssdk.services.s3.model.GetObjectRequest;
 import software.amazon.awssdk.services.s3.model.GetObjectResponse;
+import software.amazon.awssdk.services.s3.model.NoSuchKeyException;
 import software.amazon.awssdk.services.s3.model.ObjectCannedACL;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 import software.amazon.awssdk.services.s3.model.S3Exception;
@@ -101,13 +102,31 @@ public class FileStorageService {
 
 		try (ResponseInputStream<GetObjectResponse> inputStream = s3Client.getObject(request)) {
 			return inputStream.readAllBytes();
-		} catch (IOException ex) {
+		} catch (NoSuchKeyException e) {
+			return null;
+		}  catch (IOException ex) {
 			String errorMessage = "Não foi possivel realizar o download do arquivo";
 			log.error(errorMessage, ex);
 			throw new RuntimeException(errorMessage, ex);
 		} catch (Exception ex) {
 			log.error("Erro no downloadReport: ", ex);
 			throw ex;
+		}
+	}
+
+	public void deleteReport(String reportFileName) {
+		DeleteObjectRequest request = DeleteObjectRequest.builder()
+				.bucket(reportsBucket)
+				.key(reportFileName)
+				.build();
+
+		try {
+			s3Client.deleteObject(request);
+		} catch (S3Exception ex) {
+			String errorMessage = "Não foi possivel deletar o arquivo";
+			log.error(errorMessage, ex);
+		} catch (Exception ex) {
+			log.error("Erro no deleteReport: ", ex);
 		}
 	}
 
