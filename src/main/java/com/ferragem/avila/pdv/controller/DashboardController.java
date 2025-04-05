@@ -108,7 +108,7 @@ public class DashboardController {
         }
 
         produtoService.gerarRelatorioProdutosGeral(RELATORIO_PRODUTOS_KEY);
-        return ResponseEntity.status(202).body("Gerando relatório");
+        return ResponseEntity.status(202).contentType(MediaType.APPLICATION_JSON).body("Gerando relatório");
     }
 
     @Operation(summary = "Buscar produtos com baixo estoque", description = """
