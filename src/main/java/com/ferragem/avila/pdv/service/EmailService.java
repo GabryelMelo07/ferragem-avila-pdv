@@ -1,6 +1,7 @@
 package com.ferragem.avila.pdv.service;
 
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.io.ClassPathResource;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.scheduling.annotation.Async;
@@ -32,6 +33,9 @@ public class EmailService {
         helper.setTo(dto.to());
         helper.setSubject(dto.subject());
         helper.setText(dto.body(), true);
+
+		ClassPathResource image = new ClassPathResource("static/logotipo-horizontal.png");
+    	helper.addInline("logoImage", image);
 
         javaMailSender.send(message);
     }

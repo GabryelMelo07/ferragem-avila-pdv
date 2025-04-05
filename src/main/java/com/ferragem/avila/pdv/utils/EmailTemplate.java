@@ -2,16 +2,10 @@ package com.ferragem.avila.pdv.utils;
 
 import java.time.LocalDate;
 
-import org.springframework.beans.factory.annotation.Value;
-
 import lombok.NoArgsConstructor;
 
 @NoArgsConstructor
 public class EmailTemplate {
-
-    @Value("${logotipo-email-template}")
-    private String logoImgLink;
-    
     public String getResetPasswordTemplate(String nome, String link) {
         return """
                     <!DOCTYPE html>
@@ -76,7 +70,7 @@ public class EmailTemplate {
                     <body>
                         <div class="container">
                             <div class="header">
-                                <img class="logo-img" src="%s" alt="Ferragem Ávila">
+                                <img class="logo-img" src="cid:logoImage" alt="Ferragem Ávila">
                             </div>
                             <div class="content">
                                 <h1>Redefinição de Senha</h1>
@@ -93,7 +87,6 @@ public class EmailTemplate {
                         </div>
                     </body>
                     </html>
-                """.formatted(logoImgLink, nome, link, LocalDate.now().getYear());
+                """.formatted(nome, link, LocalDate.now().getYear());
     }
-
 }
