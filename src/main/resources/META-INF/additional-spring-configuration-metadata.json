@@ -117,6 +117,11 @@
   {
     "name": "swagger.tryitout.enabled",
     "type": "java.lang.String",
-    "description": "A value to enable or disable the swagger tests. The default value is false."
+    "description": "A boolean value to enable or disable the swagger tests"
+  },
+  {
+    "name": "generate.admin.user",
+    "type": "java.lang.String",
+    "description": "A boolean value to define if the admin user will be generated automatically"
   }
 ]}
