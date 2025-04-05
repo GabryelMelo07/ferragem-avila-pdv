@@ -19,7 +19,11 @@ WORKDIR /backend
 EXPOSE 8081
 
 # ⚠️ Instala as dependências necessárias para evitar o erro com fontes no AWT/Apache POI
-RUN apt-get update && apt-get install -y libfreetype6 && rm -rf /var/lib/apt/lists/*
+RUN apt-get update && apt-get install -y \
+    fontconfig \
+    fonts-dejavu-core \
+    libfreetype6 \
+    && rm -rf /var/lib/apt/lists/*
 
 COPY --from=build /backend/target/pdv-0.0.1-SNAPSHOT.jar app.jar
 
