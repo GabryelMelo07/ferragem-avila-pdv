@@ -113,5 +113,10 @@
     "name": "wss.api.url",
     "type": "java.lang.String",
     "description": "URL to the API responsible to send messages in real time using WebSocket to frontend"
+  },
+  {
+    "name": "swagger.tryitout.enabled",
+    "type": "java.lang.String",
+    "description": "A value to enable or disable the swagger tests. The default value is false."
   }
 ]}

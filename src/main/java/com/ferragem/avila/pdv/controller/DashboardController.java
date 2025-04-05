@@ -7,6 +7,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -90,6 +91,15 @@ public class DashboardController {
         if (redisTemplate.hasKey(RELATORIO_PRODUTOS_KEY)) {
             String redisValue = (String) redisTemplate.opsForValue().get(RELATORIO_PRODUTOS_KEY);
             byte[] relatorio = produtoService.getRelatorioGerado(redisValue);
+
+			if (relatorio == null) {
+				redisTemplate.delete(RELATORIO_PRODUTOS_KEY);
+				return ResponseEntity.status(HttpStatus.GONE)
+						.body("Relatório expirado ou não encontrado, gere novamente.");
+			}
+
+			redisTemplate.delete(RELATORIO_PRODUTOS_KEY);
+			produtoService.deletarRelatorioConsumido(redisValue);
 
             return ResponseEntity.ok()
                     .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + redisValue + "\"")

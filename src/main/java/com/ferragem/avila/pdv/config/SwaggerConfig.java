@@ -29,10 +29,10 @@ import io.swagger.v3.oas.models.servers.Server;
 @SecurityScheme(name = "bearerAuth", type = SecuritySchemeType.HTTP, bearerFormat = "JWT", scheme = "bearer")
 public class SwaggerConfig {
 
-	private final String activeProfile;
+	private final boolean swaggerTryItOutEnabled;
 
-	public SwaggerConfig(@Value("${spring.profiles.active}") String activeProfile) {
-		this.activeProfile = activeProfile;
+	public SwaggerConfig(@Value("${swagger.tryitout.enabled}") boolean swaggerTryItOutEnabled) {
+		this.swaggerTryItOutEnabled = swaggerTryItOutEnabled;
 	}
 	
 	@Bean
@@ -92,9 +92,9 @@ public class SwaggerConfig {
 		swaggerUiConfig.setDefaultModelExpandDepth(-1);
 		swaggerUiConfig.setDocExpansion("none");
 
-		// if ("prd".equals(activeProfile)) {
-		// 	swaggerUiConfig.setSupportedSubmitMethods(new ArrayList<>());
-        // }
+		if (!swaggerTryItOutEnabled) {
+			swaggerUiConfig.setSupportedSubmitMethods(new ArrayList<>());
+        }
 		
 		return swaggerUiConfig;
 	}
