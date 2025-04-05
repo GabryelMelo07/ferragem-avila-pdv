@@ -21,6 +21,9 @@ public class AdminUserConfig implements CommandLineRunner {
 
 	private BCryptPasswordEncoder passwordEncoder;
 
+	@Value("${generate.admin.user}")
+	private boolean generateAdminUser;
+
 	@Value("${admin.config.username}")
 	private String adminUsername;
 
@@ -46,23 +49,25 @@ public class AdminUserConfig implements CommandLineRunner {
 	@Override
 	@Transactional
 	public void run(String... args) throws Exception {
-		var roleAdmin = roleRepository.findByNameIgnoreCase(RoleValue.ADMIN.name());
-		var userAdmin = userRepository.findByUsername(adminUsername);
+		if (generateAdminUser) {
+			var roleAdmin = roleRepository.findByNameIgnoreCase(RoleValue.ADMIN.name());
+			var userAdmin = userRepository.findByUsername(adminUsername);
 
-		userAdmin.ifPresentOrElse(
-				user -> {
-					System.out.println(
-							"Já existe um usuário administrador com o username: %s.".formatted(user.getUsername()));
-				},
-				() -> {
-					var user = new User();
-					user.setUsername(adminUsername);
-					user.setPassword(passwordEncoder.encode(adminPassword));
-					user.setEmail(adminEmail);
-					user.setNome(adminNome);
-					user.setSobrenome(adminSobrenome);
-					user.setRoles(Set.of(roleAdmin));
-					userRepository.save(user);
-				});
+			userAdmin.ifPresentOrElse(
+					user -> {
+						System.out.println(
+								"Já existe um usuário administrador com o username: %s.".formatted(user.getUsername()));
+					},
+					() -> {
+						var user = new User();
+						user.setUsername(adminUsername);
+						user.setPassword(passwordEncoder.encode(adminPassword));
+						user.setEmail(adminEmail);
+						user.setNome(adminNome);
+						user.setSobrenome(adminSobrenome);
+						user.setRoles(Set.of(roleAdmin));
+						userRepository.save(user);
+					});
+		}
 	}
 }
