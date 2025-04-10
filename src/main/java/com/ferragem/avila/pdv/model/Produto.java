@@ -24,91 +24,93 @@ import lombok.ToString.Include;
 @Table(name = "produto")
 public class Produto implements Serializable {
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @EqualsAndHashCode.Include
-    @Include
-    private Long id;
+	@Id
+	@GeneratedValue(strategy = GenerationType.IDENTITY)
+	@EqualsAndHashCode.Include
+	@Include
+	private Long id;
 
-    @Column(length = 70, nullable = false, unique = true)
-    private String descricao;
+	@Column(length = 70, nullable = false, unique = true)
+	private String descricao;
 
-    @Column(nullable = false)
-    @Enumerated(EnumType.STRING)
-    private UnidadeMedida unidadeMedida;
+	@Column(nullable = false)
+	@Enumerated(EnumType.STRING)
+	private UnidadeMedida unidadeMedida;
 
-    @Column(nullable = false)
-    private Float estoque;
+	@Column(nullable = false)
+	private Float estoque;
 
-    @Column(nullable = false, precision = 8, scale = 2)
-    private BigDecimal precoFornecedor;
+	@Column(nullable = false, precision = 8, scale = 2)
+	private BigDecimal precoFornecedor;
 
-    @Column(nullable = false, precision = 8, scale = 2)
-    private BigDecimal preco;
+	@Column(nullable = false, precision = 8, scale = 2)
+	private BigDecimal preco;
 
-    @Column(unique = true, length = 13, nullable = true)
-    private String codigoBarrasEAN13;
+	@Column(unique = true, length = 13, nullable = true)
+	private String codigoBarrasEAN13;
 
-    @Column(nullable = false)
-    private boolean ativo;
+	@Column(nullable = false)
+	private boolean ativo;
 
-    @Column()
-    private String imagem;
+	@Column()
+	private String imagem;
 
 	public Produto() {
 		this.ativo = true;
 	}
-    
-    public Produto(ProdutoDto dto) {
-        this.descricao = dto.descricao();
-        this.unidadeMedida = dto.unidadeMedida();
-        this.estoque = dto.estoque();
-        this.precoFornecedor = dto.precoFornecedor();
-        this.preco = dto.preco();
-        this.codigoBarrasEAN13 = dto.codigoBarrasEAN13();
-        this.ativo = true;
-    }
 
-    public Produto(ProdutoDto dto, String imagemUrl) {
-        this.descricao = dto.descricao();
-        this.unidadeMedida = dto.unidadeMedida();
-        this.estoque = dto.estoque();
-        this.precoFornecedor = dto.precoFornecedor();
-        this.preco = dto.preco();
-        this.codigoBarrasEAN13 = dto.codigoBarrasEAN13();
-        this.ativo = true;
-        this.imagem = imagemUrl;
-    }
-
-    public Produto(String descricao, UnidadeMedida unidadeMedida, Float estoque, BigDecimal precoFornecedor,
-            BigDecimal preco, String codigoBarrasEAN13) {
-        this.descricao = descricao;
-        this.unidadeMedida = unidadeMedida;
-        this.estoque = estoque;
-        this.precoFornecedor = precoFornecedor;
-        this.preco = preco;
-        this.codigoBarrasEAN13 = codigoBarrasEAN13;
-        this.ativo = true;
-    }
-
-	public void setCodigoBarrasEAN13(String codigoBarrasEan13) {
-		if (!codigoBarrasEan13.matches("^\\d{13}$")) {
-			this.codigoBarrasEAN13 = null;
-		} else {
-			this.codigoBarrasEAN13 = codigoBarrasEan13;
-		}
+	public Produto(ProdutoDto dto) {
+		this.descricao = dto.descricao();
+		this.unidadeMedida = dto.unidadeMedida();
+		this.estoque = dto.estoque();
+		this.precoFornecedor = dto.precoFornecedor();
+		this.preco = dto.preco();
+		this.codigoBarrasEAN13 = dto.codigoBarrasEAN13();
+		this.ativo = true;
 	}
 
-    public void sumEstoque(float quantidade) {
-        this.estoque += quantidade;
-    }
+	public Produto(ProdutoDto dto, String imagemUrl) {
+		this.descricao = dto.descricao();
+		this.unidadeMedida = dto.unidadeMedida();
+		this.estoque = dto.estoque();
+		this.precoFornecedor = dto.precoFornecedor();
+		this.preco = dto.preco();
+		this.codigoBarrasEAN13 = dto.codigoBarrasEAN13();
+		this.ativo = true;
+		this.imagem = imagemUrl;
+	}
 
-    public void subtractEstoque(float quantidade) {
-        if (this.estoque - quantidade < 0) {
-            throw new ProdutoSemEstoqueException();
-        }
+	public Produto(String descricao, UnidadeMedida unidadeMedida, Float estoque, BigDecimal precoFornecedor,
+			BigDecimal preco, String codigoBarrasEAN13) {
+		this.descricao = descricao;
+		this.unidadeMedida = unidadeMedida;
+		this.estoque = estoque;
+		this.precoFornecedor = precoFornecedor;
+		this.preco = preco;
+		this.codigoBarrasEAN13 = codigoBarrasEAN13;
+		this.ativo = true;
+	}
 
-        this.estoque -= quantidade;
-    }
-    
+	public void setCodigoBarrasEAN13(String codigoBarrasEan13) {
+		codigoBarrasEan13 = codigoBarrasEan13 != null ? codigoBarrasEan13.trim() : codigoBarrasEan13;
+
+		this.codigoBarrasEAN13 = codigoBarrasEan13 != null
+				&& !codigoBarrasEan13.isEmpty()
+				&& codigoBarrasEan13.matches("^\\d{13}$")
+						? codigoBarrasEan13
+						: null;
+	}
+
+	public void sumEstoque(float quantidade) {
+		this.estoque += quantidade;
+	}
+
+	public void subtractEstoque(float quantidade) {
+		if (this.estoque - quantidade < 0) {
+			throw new ProdutoSemEstoqueException();
+		}
+
+		this.estoque -= quantidade;
+	}
+
 }

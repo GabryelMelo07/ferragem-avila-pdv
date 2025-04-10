@@ -8,10 +8,13 @@ import java.math.BigDecimal;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 
 import org.springframework.beans.factory.annotation.Value;
@@ -29,7 +32,6 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.ferragem.avila.pdv.dto.WssMessageRequest;
 import com.ferragem.avila.pdv.dto.produto.ProdutoDto;
 import com.ferragem.avila.pdv.dto.produto.UpdateProdutoDto;
-import com.ferragem.avila.pdv.exceptions.CodigoBarrasInvalidoException;
 import com.ferragem.avila.pdv.exceptions.ProdutoNaoEncontradoException;
 import com.ferragem.avila.pdv.exceptions.XlsxSizeLimitException;
 import com.ferragem.avila.pdv.model.Produto;
@@ -101,7 +103,8 @@ public class ProdutoService {
 			String nomeRelatorio = fileStorageService.uploadReport(relatorio, "relatorio_produtos");
 
 			redisProductUtils.storeValueAndSendMessage(relatorioKey, nomeRelatorio, 3, TimeUnit.HOURS,
-					new WssMessageRequest(OperationStatus.SUCCESS, OperationInfo.RELATORIO_PRODUTOS, "Relatório de produtos gerado com sucesso!"));
+					new WssMessageRequest(OperationStatus.SUCCESS, OperationInfo.RELATORIO_PRODUTOS,
+							"Relatório de produtos gerado com sucesso!"));
 		}
 	}
 
@@ -179,34 +182,24 @@ public class ProdutoService {
 
 	@CacheEvict(value = "produtos_ativos", allEntries = true)
 	public Produto save(ProdutoDto dto) {
-		String codigoBarrasEAN13 = dto.codigoBarrasEAN13();
-
-		if (codigoBarrasEAN13 != null && !codigoBarrasEAN13.matches("^\\d{13}$")) {
-			throw new CodigoBarrasInvalidoException();
-		}
+		Produto p = new Produto(dto);
+		p.setCodigoBarrasEAN13(dto.gerarCodigoBarrasEAN13() ? generateRandomEan13BarCode() : dto.codigoBarrasEAN13());
 
 		if (dto.imagem() != null) {
-			return save(new Produto(dto), dto.imagem());
+			return save(p, dto.imagem());
 		}
 
-		Produto p = new Produto(dto);
 		return save(p);
 	}
 
 	@CacheEvict(value = "produtos_ativos", allEntries = true)
 	public Produto update(long id, UpdateProdutoDto dto) {
-		String codigoBarrasEAN13 = dto.codigoBarrasEAN13();
-		
-		if (codigoBarrasEAN13 != null && !codigoBarrasEAN13.matches("^\\d{13}$")) {
-			throw new CodigoBarrasInvalidoException();
-		}
-
 		Produto p = getById(id);
 		p.setDescricao(dto.descricao());
 		p.setUnidadeMedida(dto.unidadeMedida());
 		p.setPrecoFornecedor(dto.precoFornecedor());
 		p.setPreco(dto.preco());
-		p.setCodigoBarrasEAN13(dto.codigoBarrasEAN13());
+		p.setCodigoBarrasEAN13(dto.gerarCodigoBarrasEAN13() ? generateRandomEan13BarCode() : dto.codigoBarrasEAN13());
 
 		if (dto.imagem() != null) {
 			return save(p, dto.imagem());
@@ -227,11 +220,11 @@ public class ProdutoService {
 		Produto p = getById(id);
 
 		String imgUrl = p.getImagem();
-		
+
 		if (imgUrl != null && !imgUrl.isBlank()) {
 			fileStorageService.deleteImage(imgUrl);
 		}
-		
+
 		p.setAtivo(false);
 		save(p);
 	}
@@ -380,6 +373,19 @@ public class ProdutoService {
 						""", savedProducts, result.getProdutosComErro().size()),
 				origin.equals("CSV") ? OperationInfo.CSV : OperationInfo.XML,
 				result);
+	}
+
+	private String generateRandomEan13BarCode() {
+		String generatedEan13BarCode = null;
+
+		do {
+			LocalDateTime localDateTime = LocalDateTime.now();
+			DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern("ddMMHHmm");
+			int randomNumber = ThreadLocalRandom.current().nextInt(10000, 100000);
+			generatedEan13BarCode = "%s%d".formatted(localDateTime.format(dateTimeFormatter), randomNumber);
+		} while (produtoRepository.findByCodigoBarrasEAN13(generatedEan13BarCode).isPresent());
+		
+		return generatedEan13BarCode;
 	}
 
 }

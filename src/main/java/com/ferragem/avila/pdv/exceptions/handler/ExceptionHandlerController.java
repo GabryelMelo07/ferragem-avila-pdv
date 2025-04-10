@@ -33,7 +33,9 @@ import com.ferragem.avila.pdv.utils.RestErrorMessage;
 
 import jakarta.mail.MessagingException;
 import jakarta.persistence.EntityNotFoundException;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 @RestControllerAdvice
 public class ExceptionHandlerController extends ResponseEntityExceptionHandler {
 
@@ -50,7 +52,18 @@ public class ExceptionHandlerController extends ResponseEntityExceptionHandler {
 
 	private ResponseEntity<RestErrorMessage> buildResponse(HttpStatus status, String message, Throwable throwable) {
 		if (isDev() && throwable != null) {
-			throwable.printStackTrace();
+			String errorMessage = """
+				\n#####################################
+
+				Http Status: %s
+				
+				Error Message: %s
+
+				Stack Trace: %s
+				
+				#####################################
+			""".formatted(status.value(), message, throwable.getMessage());
+			logger.error(errorMessage, throwable);
 		}
 		
         RestErrorMessage response = new RestErrorMessage(LocalDateTime.now(ZoneId.of("America/Sao_Paulo")), status,
@@ -60,7 +73,20 @@ public class ExceptionHandlerController extends ResponseEntityExceptionHandler {
 
 	private ResponseEntity<RestErrorMessage> buildResponse(HttpStatus status, String detailedError, String error, Throwable throwable) {
 		if (isDev() && throwable != null) {
-			throwable.printStackTrace();
+			String errorMessage = """
+				#####################################
+
+				Http Status: %s
+				
+				Error Message: %s
+
+				Detailed Error Message: %s
+
+				Stack Trace: %s
+				
+				#####################################
+			""".formatted(status.value(), error, detailedError, throwable.getMessage());
+			logger.error(errorMessage, throwable);
 		}
 		
 		RestErrorMessage response = new RestErrorMessage(LocalDateTime.now(ZoneId.of("America/Sao_Paulo")), status,
