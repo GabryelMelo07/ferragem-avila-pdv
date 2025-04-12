@@ -9,6 +9,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
@@ -379,7 +380,7 @@ public class ProdutoService {
 		String generatedEan13BarCode = null;
 
 		do {
-			LocalDateTime localDateTime = LocalDateTime.now();
+			LocalDateTime localDateTime = LocalDateTime.now(ZoneId.of("America/Sao_Paulo"));
 			DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern("ddMMHHmm");
 			int randomNumber = ThreadLocalRandom.current().nextInt(10000, 100000);
 			generatedEan13BarCode = "%s%d".formatted(localDateTime.format(dateTimeFormatter), randomNumber);
