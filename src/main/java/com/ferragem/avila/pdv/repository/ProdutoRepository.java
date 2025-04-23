@@ -29,7 +29,7 @@ public interface ProdutoRepository extends JpaRepository<Produto, Long> {
 
     Page<Produto> findByAtivoIsTrueAndDescricaoContainingIgnoreCase(String parametro, Pageable pageable);
 	
-    @Query("SELECT p FROM Produto p WHERE p.estoque <= 10")
+    @Query("SELECT p FROM Produto p WHERE p.estoque <= 5")
     Page<Produto> findProdutosComEstoqueBaixo(Pageable pageable);
 
     @Query("""
